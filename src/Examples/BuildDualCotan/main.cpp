@@ -43,9 +43,13 @@ int main(int argc, char *argv[])
     Eigen::MatrixXd V;
     Eigen::MatrixXi T;
     
-    if(!loadTetMesh(meshFile, V, T)) std::cout << "could not read file\n";
+    if(!loadTetMesh(meshFile, V, T)) {
+        std::cout << "could not read file\n";
+        return 0;
+    }
+    
     Eigen::SparseMatrix<double> L0, L2, M0, M2;
-    Original::dualLaplace(V, T, L0, M0);
+    dualLaplace(V, T, L0, M0);
     L2 = L0;
     M2 = M0;
     
