@@ -1,6 +1,6 @@
 # SymbolicLib
 
-<img width="1415" height="238" src="https://igl.ethz.ch/projects/sscoet/teaser.jpg">
+![teaser](/url "https://igl.ethz.ch/projects/sscoet/teaser.jpg")
 
 This repository contains an implementation of algorithms presented in
 
