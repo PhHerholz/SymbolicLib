@@ -9,14 +9,12 @@
 #include "SymbolicDifferentiation.hpp"
 #include "ComputeUnit.hpp"
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     using namespace std;
     using namespace Sym;
     
     // A symbolic expression is represented by instances of the class 'Sym::Symbolic'.
     // We start by creating two variables. Variables have two parameters, a variable id and a variable group.
-    
     Symbolic a(0, 0);
     Symbolic b(1, 0);
     
