@@ -1,6 +1,6 @@
 # SymbolicLib
 
-![teaser](flow.pdf)
+![teaser](flow.png)
 
 This repository contains an implementation of algorithms presented in
 
