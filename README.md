@@ -1,6 +1,6 @@
 # SymbolicLib
 
-![teaser](https://igl.ethz.ch/projects/sscoet/teaser.jpg)
+![teaser](flow.pdf)
 
 This repository contains an implementation of algorithms presented in
 
