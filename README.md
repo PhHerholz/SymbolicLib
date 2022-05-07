@@ -77,7 +77,7 @@ We want to compile a program that evaluates the expression. Compute unit defines
     
     cout << "difference: " << (B - B2).norm() << endl;
 ```
-Generating a program for cuda devices just requires to set device parameters..
+Generating a program for cuda devices just requires setting the `UseCuda` device parameter.
 ```cpp
     ComputeUnit<double> unitCuda(Device(UseCuda(), ThreadsPerBlock(128)), AS, BS);
     unitCuda.compile().execute(A).getResults(B2);
