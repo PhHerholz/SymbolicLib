@@ -16,12 +16,12 @@ Compiling from scratch requires CMake and a recent version of XCode on Mac and
 Visual Studio 2019 on Windows.
 
 On MacOS, compiling should be as simple as
-
+```
 git clone https://github.com/PhHerholz/SymbolicLib
 cd SymbolicLib && mkdir build && cd build
 cmake .. 
 make -j4
-
+```
 ## The `Symbolic` type
 
  A symbolic expression is represented by instances of the class `Sym::Symbolic`. We start by creating two variables. Variables have two parameters, a variable id and a variable group.
