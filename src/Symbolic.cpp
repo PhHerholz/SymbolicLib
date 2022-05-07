@@ -28,7 +28,7 @@ void Symbolic::Data::init() {
 }
 
 
-Symbolic::Data::Data(const OpType _op, Symbolic* _childs, unsigned short int _numChilds)
+Symbolic::Data::Data(const OpType _op, Symbolic* _childs, unsigned int _numChilds)
 : op(_op), numChilds(_numChilds), childs(_childs) {
     init();
 }

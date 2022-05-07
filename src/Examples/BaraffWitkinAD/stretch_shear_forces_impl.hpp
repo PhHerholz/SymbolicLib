@@ -54,7 +54,7 @@ std::vector<NT> StretchShear<NT>::energy(const Eigen::Matrix<NT, -1, -1>& X) {
     typedef Eigen::Matrix<NT, 2, 1> Vector2d;
     
     std::vector<NT> ret;
-    
+
     for (int f = 0; f < m; f++) {
         MatrixXd D(3, 2);
         D.col(0) = X.row(F(f, 1)) - X.row(F(f, 0));

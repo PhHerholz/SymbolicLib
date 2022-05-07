@@ -1,9 +1,11 @@
 #pragma once
 
 #include "Operations.hpp"
+//#include "Utilities.hpp"
 #include <iostream>
 #include <array>
 #include <assert.h>
+#include <unordered_map>
 
 namespace Sym {
 
@@ -23,7 +25,7 @@ public:
         unsigned int ref = 1; // reference counter
     
         const OpType op;
-        const unsigned short int numChilds;
+        const unsigned int numChilds;
         unsigned char complexity;
         hash_t algebraicHash;
         
@@ -42,7 +44,8 @@ public:
         
         template<class... T>
         Data(const T& ... args) : op(0), numChilds(0), childs(nullptr) {
-            std::cout << "constructor not implemented" << std::endl;
+          //  std::cout << "constructor not implemented: " << print_pack_types<T...>() << std::endl;
+            exit(0);
             init();
         }
         
@@ -53,7 +56,7 @@ public:
         
         Data(int a0, int a1);
 
-        Data(const OpType op,  Symbolic* childs, unsigned short int numChilds);
+        Data(const OpType op,  Symbolic* childs, unsigned int numChilds);
         
         Data(const OpType op, const std::vector<Symbolic>& childs);
         
@@ -114,7 +117,7 @@ public:
         return data->constant;
     }
 
-    inline unsigned short numChilds() const {
+    inline unsigned numChilds() const {
         if(data) return data->numChilds;
         else return 0;
     }
@@ -166,14 +169,44 @@ public:
 
 struct AlgebraicHashFunctor {
     inline hash_t operator()(const Symbolic& s) const {return s.ahash();}
+    
     inline hash_t operator()(const Symbolic& s0, const Symbolic& s1) const {return s0.ahash() < s1.ahash();}
+};
+
+class CachedFactory {
+    
+    std::unordered_map<hash_t, Symbolic> cache;
+    
+public:
+    template<class... Args>
+    Symbolic operator()(const Args&... args) {
+        Symbolic x(args...);
+        
+        if(std::abs(x.ahash()) <= 32) return Symbolic((double)x.ahash());
+        
+        auto& y = cache[x.ahash()];
+        if(y.op() == NOOP) y = x;
+      
+        return y;
+    }
+};
+
+class Factory {
+public:
+    template<class... Args>
+    Symbolic operator()(const Args&... args) {
+        return Symbolic(args...);
+    }
 };
 
 class ExpressionBlock {
 public:
     Symbolic x;
+ 
     hash_t structureHash;
+    
     int level;
+    
     std::vector<int> childs;
     
     ExpressionBlock() {}

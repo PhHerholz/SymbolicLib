@@ -33,15 +33,13 @@ void buildMass(Eigen::Matrix<TNum, -1, -1>& V, Eigen::MatrixXi& F, Eigen::Sparse
 }
 
 template<class TNum>
-std::array<long, 2> buildCotan(Eigen::Matrix<TNum, -1, -1>& V, Eigen::MatrixXi& F, Eigen::SparseMatrix<TNum>& L, Eigen::SparseMatrix<TNum>& M)
-{
+std::array<long, 2> buildCotan(Eigen::Matrix<TNum, -1, -1>& V, Eigen::MatrixXi& F, Eigen::SparseMatrix<TNum>& L, Eigen::SparseMatrix<TNum>& M) {
     std::array<long, 2> ret;
     
     std::vector<Eigen::Triplet<TNum>> triplets;
     triplets.reserve(F.rows() * 12);
     
     buildMass(V, F, M);
-    
     
     for(int i = 0; i < F.rows(); ++i) {
         Eigen::Matrix<TNum, 3, 1> e0 = V.row(F(i, 0)) - V.row(F(i, 1));

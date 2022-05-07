@@ -43,7 +43,7 @@ Kernel::Kernel(const vector<Symbolic>& expressions, const int _simdWidth) : simd
             return childCounter++ == x.front().numChilds();
         }
         
-        unsigned short numChilds() const {
+        unsigned int numChilds() const {
             return x.empty() ? 0 : x.front().numChilds();
         }
         
@@ -132,7 +132,7 @@ Kernel::Kernel(const vector<Symbolic>& expressions, const int _simdWidth) : simd
             init();
         }
         
-        StackData(const vector<Symbolic>& data, const unsigned short numChild) {
+        StackData(const vector<Symbolic>& data, const unsigned int numChild) {
             x.reserve(data.size());
             for(auto& d : data) x.push_back(d[numChild]);
             init();
@@ -215,7 +215,10 @@ Kernel::Kernel(const vector<Symbolic>& expressions, const int _simdWidth) : simd
 }
 
 void Kernel::optimizeTemplateExpression() {
-
+    
+    templateExpression = removeConstantExpressions(templateExpression);
+  //  templateExpression = simplify(templateExpression);
+    templateExpression = removeConstantExpressions(templateExpression);
     templateExpression = referenceRedundant(templateExpression);
     
     vector<Symbolic> vec{templateExpression};
@@ -223,7 +226,7 @@ void Kernel::optimizeTemplateExpression() {
     
     // simplify blocks
     for (auto& b : blocks) {
-     //   b.x = simplify(b.x);
+        b.x = simplify(b.x);
     }
 
     // relabel assigned variables to defines

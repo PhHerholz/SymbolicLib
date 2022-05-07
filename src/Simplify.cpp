@@ -38,7 +38,6 @@ Symbolic makeMul(const vector<Symbolic>& childs) {
 	return ret;
 }
 
-
 Symbolic makeAddition(vector<Symbolic> operands) {
 
 	double constant = .0;
@@ -105,7 +104,6 @@ Symbolic flattenAdditions(const Symbolic& expr) {
 
 	return ret;
 }
-
 
 Symbolic flattenMultiplications(const Symbolic& expr) {
 
@@ -452,7 +450,22 @@ Symbolic simplify(const Symbolic& expr) {
 
 }
 
-Symbolic referenceRedundant2(const Symbolic& x) {
+Symbolic removeConstantExpressions(const Symbolic& x) {
+    return traverseGenerate<Symbolic>(x,
+        [](const Symbolic& x) {
+        return x;
+            if(isSmallConstant(x.ahash())) {
+                return Symbolic((double)x.ahash());
+            } else return x;
+        }, [](const Symbolic& x, const std::vector<Symbolic>& childs) {
+
+            if (x.numChilds() == 0) return x;
+            return makeSymbolic(x.op(), childs);
+
+        }, true);
+}
+
+Symbolic referenceRedundant(Symbolic& x) {
 	return traverseGenerate<Symbolic>(x,
 		[](const Symbolic& x) {return x; },
 		[](const Symbolic& x, const std::vector<Symbolic>& childs) {
@@ -463,7 +476,7 @@ Symbolic referenceRedundant2(const Symbolic& x) {
 		}, true);
 }
 
-Symbolic referenceRedundant(const Symbolic& x) {
+Symbolic referenceRedundant2(const Symbolic& x) {
 	unordered_map<hash_t, Symbolic, IdentityHash<hash_t>> cache;
 	vector<Symbolic> stack;
 

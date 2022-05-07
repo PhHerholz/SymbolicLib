@@ -18,7 +18,7 @@
 #ifdef _MSC_VER 
 #include <windows.h>
 #include <process.h>
-#elif __APPLE__
+#else
 #include <dlfcn.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -58,7 +58,7 @@ void ComputeUnit<RealT>::close() {
         if (device.numThreads > 1) Sleep(1500); // account for spin-wait of openmp. Alternatively call SetEnvironmentVariable(L"OMP_WAIT_POLICY", L"passive");
         FreeLibrary((HINSTANCE)libHandle);
 #else
-        dlclose(libHandle);
+        dlclose((void*)libHandle);
 #endif        
         
         libHandle = nullptr;
@@ -103,7 +103,7 @@ void ComputeUnit<RealT>::compile(const string& code) {
     string cmd;
     
     if (device.cudaDevice) {
-        cmd = "nvcc -I. --shared -O3 -o cpuCode.so cpuCode.cu";
+        cmd = "nvcc -I../../data/ -Xcompiler '-fPIC -shared' -O3 -o cpucode.so cpuCode.cu";
     } else {
         cmd = "clang++ -shared -fPIC -ffast-math -fno-trapping-math -fno-math-errno -fno-signed-zeros -O3 -std=c++17 -msse4.2 -mavx2 -mfma cpuCode.cpp -ocpucode.so";
         
@@ -111,23 +111,25 @@ void ComputeUnit<RealT>::compile(const string& code) {
 #ifdef __APPLE__
             cmd += format(" -DNUMTHREADS=% -Xclang -fopenmp -L/opt/intel/lib -Wl,-rpath,/opt/intel/lib -liomp5", device.numThreads);
 #else
-            cmd += format(" -DNUMTHREADS=% -fopenmp -L/opt/rocm/llvm/lib -Wl,-rpath,/opt/rocm/llvm/lib -liomp5", device.numThreads);
+            cmd += format(" -DNUMTHREADS=% -fopenmp -I/opt/rocm/llvm/include -L/opt/rocm/llvm/lib -Wl,-rpath,/opt/rocm/llvm/lib -liomp5", device.numThreads);
 #endif
         }
     }
     
-    if (libHandle) dlclose(libHandle);
-    system(cmd.c_str());
+    close();
+    if(system(cmd.c_str()) == -1) {
+        std::cout << "could not exectue shell command\n";
+        return;
+    } 
     
-    // link dynamic library
+    // link dynamic library and get function pointers
     libHandle = dlopen ("./cpucode.so", RTLD_LAZY);
-    
+        
     finishFunc = (decltype(finishFunc)) dlsym (libHandle, "finish");
     initFunc = (decltype(initFunc)) dlsym (libHandle, "init");
     runFunc = (decltype(runFunc)) dlsym (libHandle, "run");
     setArgFunc = (decltype(setArgFunc)) dlsym (libHandle, "setArg");
     getResFunc = (decltype(getResFunc)) dlsym (libHandle, "getResult");
-    
 #endif
     
     if (libHandle == nullptr) {
@@ -139,7 +141,7 @@ void ComputeUnit<RealT>::compile(const string& code) {
         cout << "function handle not found\n";
         return;
     }
-    
+     
     initFunc((const unsigned int*)positionData.data(), (const unsigned int*)outputIdsFlat.data(), (const RealT*)constantData.data());
 }
 
@@ -180,9 +182,7 @@ template<class RealT>
 void ComputeUnit<RealT>::init() {
     
     // decompose set of expressions
-    Timer t;
     auto blocks = decompose(outputExpressions, device.decompositionThreshold, GLOBAL_INTERMEDIATE, true);
-    t.printTime("globalDecomposition");
     
     // group blocks by structure hash
     auto groupIds = group(blocks);
@@ -252,7 +252,6 @@ void ComputeUnit<RealT>::init() {
     }
     
     // write binary data
-    
     saveData("constData", constantData);
     saveData("indexData", positionData);
     saveData("outIndexData", outputIdsFlat);
@@ -308,15 +307,18 @@ void ComputeUnit<RealT>::init() {
     for (int i = 0; i < kernels.size(); ++i) {
         file << format("\tK(%);\n", i);
     }
-    if (device.cudaDevice) file << "\tCHECK(cudaStreamSynchronize(stream));\n";
-    file << "}\n";
+
+    file << "\tSYNC;\n"
+            "}\n";
+
     file << (device.cudaDevice ? cudaFooter : cpuFooter);
     code = file.str();
 }
 
 template<class RealT>
-void ComputeUnit<RealT>::compile() {
+ComputeUnit<RealT>& ComputeUnit<RealT>::compile() {
     compile(code);
+    return *this;
 }
 
 template<class RealT>

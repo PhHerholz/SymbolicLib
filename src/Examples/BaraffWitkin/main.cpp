@@ -63,16 +63,10 @@ int main(int argc, char *argv[]) {
     Cloth<Symbolic> clothS(V, F);
     clothS.generateMatrixAndRHS(XS, VS, AS, bS, 0.05);
     Eigen::SparseMatrix<Symbolic> A2S = AS.triangularView<Eigen::Lower>();
-    
-    Sym::ComputeUnit<double> unit(Device(VecWidth(4), NumThreads(8)), XS, VS, A2S);
-    unit.compile();
-    
-    t.reset();
-    unit.execute(V2, vel);
-    t.printTime("optimized");
-    
+
     std::vector<double> ret(A2.nonZeros());
-    unit.getResults(ret);
+    Sym::ComputeUnit<double> unit(Device(VecWidth(4), NumThreads(8)), XS, VS, A2S);
+    unit.compile().execute(V2, vel).getResults(ret);
     
     std::cout << "residual: " << squaredError(ret, A2) << endl;
     printDifferences(ret, A2, 1e-6);

@@ -5,11 +5,21 @@
 #include <fstream>
 #include <functional>
 #include "ContainerSupport.h"
+#include "StringTools.hpp"
+
+template <typename T, typename ...Args>
+std::string print_pack_types() {
+  if constexpr (!sizeof...(Args)) {
+    return std::string(typeid(T).name());
+  } else {
+    return std::string(typeid(T).name()) + " " + print_pack_types<Args...>();
+  }
+}
 
 template<class ContA, class ContB>
 double squaredError(const ContA& a, const ContB& b) {
     if(contSize(a) != contSize(b)) {
-        std::cout << "sizes do not match" << std::endl;
+        std::cout << format("sizes do not match: % vs %", contSize(a), contSize(b)) << std::endl;
         return std::numeric_limits<double>::max();
     }
     

@@ -161,13 +161,11 @@ class ComputeUnit {
     void init();
     
     void compile(const std::string& code);
-    
-    //int getPosition(const std::array<int, 2>& variable);
-    
+        
 public:
     ~ComputeUnit();
     
-    void compile();
+    ComputeUnit& compile();
     
     void close();
     
@@ -178,19 +176,22 @@ public:
     }
     
     template<class ...TArg>
-    void execute(const TArg& ... expressions) {
+    ComputeUnit& execute(const TArg& ... expressions) {
         setArgs(0, expressions...);
         if(runFunc) runFunc();
+        return *this;
     }
     
     template<class TArg>
-    void getResults(TArg& expr, const int i) {
+    ComputeUnit& getResults(TArg& expr, const int i) {
         getRes(i, expr);
+        return *this;
     }
     
     template<class ...TArg>
-    void getResults(TArg& ... expressions) {
+    ComputeUnit& getResults(TArg& ... expressions) {
         getRes(0, expressions...);
+        return *this;
     }
 };
 

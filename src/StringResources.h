@@ -24,7 +24,7 @@ std::string cudaHeader() {
         "#include <helper_cuda.h>\n"
         "#include <cuda_runtime_api.h>\n"
         "\n"
-	
+        "#define SYNC CHECK(cudaStreamSynchronize(stream))\n"
         "#define CHECK(ans) { gpuAssert((ans), __FILE__, __LINE__); }\n"
         "inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort = true) {\n"
         "   if (code != cudaSuccess) {\n"
@@ -176,6 +176,7 @@ std::string cpuHeader() {
     "#define GCC 3\n"
     "#define CL 4\n"
     "\n"
+    "#define SYNC\n"
     "#define KERNEL\n"
     "typedef unsigned int INDEX;\n"
     "typedef " + realTString<T>() + " RealT;\n"

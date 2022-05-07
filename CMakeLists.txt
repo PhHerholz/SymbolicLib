@@ -9,7 +9,16 @@ else()
   include_directories(/usr/local/include/)
 endif()
 
+if (APPLE)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+else()
+if (UNIX)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+else()
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+endif()
+endif()
+
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_CACHEFILE_DIR ${CMAKE_BINARY_DIR}/build)
@@ -26,4 +35,6 @@ add_subdirectory(src/Examples/BuildDualCotan)
 add_subdirectory(src/Examples/BaraffWitkin)
 
 add_subdirectory(src/Examples/BaraffWitkinAD)
+
+add_subdirectory(src/Examples/Tutorial)
 

@@ -17,16 +17,15 @@ void preOrderTraverse(const Symbolic& x, std::function<bool(const Symbolic&)> fu
 
 std::vector<Symbolic> harvestOp(OpType op, const Symbolic& x);
 
-
 template<class T>
-T traverseGenerate(const Symbolic& x, std::function<Symbolic(const Symbolic&)> preFun, std::function<T(const Symbolic&, std::vector<T>&)> postFun, const bool hashId = false) {
+T traverseGenerate(const Symbolic& x, std::function<Symbolic(const Symbolic&)> preFun, std::function<T(const Symbolic&, std::vector<T>&)> postFun, std::unordered_map<long long, T, IdentityHash<long long>>& valueMap, const bool hashId = false) {
+    
     using namespace std;
     static vector<pair<Symbolic, unsigned int>> stack;
    
     const auto size0 = stack.size();
     stack.push_back(make_pair(preFun(x), 0));
     
-    unordered_map<long long, T, IdentityHash<long long>> valueMap;
     vector<T> valueStack;
     
     while(stack.size() > size0) {
@@ -50,14 +49,25 @@ T traverseGenerate(const Symbolic& x, std::function<Symbolic(const Symbolic&)> p
             auto it = valueMap.find(hashId ? x[cnt].ahash() : x[cnt].id());
             if(it != valueMap.end()) {
                 valueStack.push_back(it->second);
-            } else
-
-            stack.push_back(make_pair(preFun(x[cnt]), 0));
+            } else stack.push_back(make_pair(preFun(x[cnt]), 0));
         }
     }
     
     assert(valueStack.size() == 1);
     return valueStack.front();
+}
+
+template<class T>
+T traverseGenerate(const Symbolic& x, std::function<Symbolic(const Symbolic&)> preFun, std::function<T(const Symbolic&, std::vector<T>&)> postFun, const bool hashId = false) {
+ 
+    std::unordered_map<long long, T, IdentityHash<long long>> valueMap;
+    return traverseGenerate(x, preFun, postFun, valueMap, hashId);
+}
+
+template<class T>
+T traverseGenerate(const Symbolic& x, std::function<T(const Symbolic&, std::vector<T>&)> postFun, std::unordered_map<long long, T, IdentityHash<long long>>& valueMap, const bool hashId = false) {
+    
+    return traverseGenerate(x, [](const Symbolic& x){return x;}, postFun, valueMap, hashId);
 }
 
 template<class T>

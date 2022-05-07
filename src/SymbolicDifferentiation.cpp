@@ -17,16 +17,13 @@ differentiate(const Symbolic& expr, const std::vector<Symbolic>& vars) {
     vector<Symbolic> grad(numVars, Symbolic(0.0));
     vector<pair<Symbolic, Symbolic>> stack{make_pair(expr, Symbolic(1.0))};
     
-   // unordered_map<hash_t, int, IdentityHash<hash_t>> varMap;
-    map<hash_t, int> varMap;
+    unordered_map<hash_t, int, IdentityHash<hash_t>> varMap;
        
     for (int i = 0; i < numVars; ++i) {
         varMap[vars[i].ahash()] = i;
     }
     
     while(!stack.empty()) {
-   //     auto expr = stack.back().first;
-     //   auto d = stack.back().second;
      
         auto x = stack.back();
         auto op = x.first.op();

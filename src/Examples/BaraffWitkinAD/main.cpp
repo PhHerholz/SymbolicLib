@@ -13,9 +13,10 @@ int main(int argc, char *argv[]) {
 
     using namespace Sym;
     using namespace std;
-    typedef double RealT;
+    typedef float RealT;
+
     
-    string meshFile = "../../data/cloth1.off";
+    string meshFile = "../../data/cloth3.off";
     cout << "read " << meshFile << endl;
     
     Eigen::MatrixXd V;
@@ -43,7 +44,7 @@ int main(int argc, char *argv[]) {
     ss.compute_grad_hessian(X, grad, tripH, false);
     t.printTime("build values");
     
-    Eigen::SparseMatrix<double> H(X.size(), X.size());
+    Eigen::SparseMatrix<RealT> H(X.size(), X.size());
     H.setFromTriplets(tripH.begin(), tripH.end());
     t.printTime("build matrix");
 
@@ -53,27 +54,30 @@ int main(int argc, char *argv[]) {
     Eigen::Matrix<Symbolic, -1, -1> XS;
     XS.resizeLike(X);
     setVariables(XS, 0);
-   
+    
+    Timer tx;
+    
+
     // direct compilation
     Eigen::Matrix<Symbolic, -1, 1> gradS;
     vector<Eigen::Triplet<Symbolic>> tripHS;
-    ssS.compute_grad_hessian(XS, gradS, tripHS);
+    ssS.compute_grad_hessian(XS, gradS, tripHS, false);
     Eigen::SparseMatrix<Symbolic> HS(X.size(), X.size());
     HS.setFromTriplets(tripHS.begin(), tripHS.end());
  
   //  ComputeUnit<RealT> unit(Device(UseCuda(), ThreadsPerBlock(64)), XS, HS);
-    ComputeUnit<RealT> unit(Device(VecWidth(4), NumThreads(8)), XS, HS);
+    ComputeUnit<RealT> unit(Device(VecWidth(8), NumThreads(1)), XS, HS);
     unit.compile();
 
     Eigen::Matrix<RealT, -1, -1> Xf = X.cast<RealT>();
     unit.execute(Xf);
-    
-    Timer tx;
+
+    tx.reset();
     for(int i = 0; i < 100; ++i) unit.execute(Xf);
     tx.printTime("100 runs");
 
     vector<RealT> H2(HS.nonZeros());
-    vector<double> grad2(gradS.size());
+    vector<RealT> grad2(gradS.size());
 
     unit.getResults(H2);
     cout << "residual: " << squaredError(H, H2) << endl;;
@@ -81,7 +85,7 @@ int main(int argc, char *argv[]) {
 
     // automatic differentiation
     auto en = Symbolic(ADD, ssS.energy(XS));
- 
+
     tx.reset();
     auto tripHS_ad = hessianSparse(en, XS);
     tx.printTime("construct Hessian (AD)");
@@ -89,17 +93,16 @@ int main(int argc, char *argv[]) {
     Eigen::SparseMatrix<Symbolic> HS_ad;
     toSparseMatrix(HS_ad, tripHS_ad, XS.size(), true);
     
-    vector<double> H3(HS_ad.nonZeros());
-    ComputeUnit<double> unitAD(Device(VecWidth(4), NumThreads(8), DecompositionThreshold(6)), XS, HS_ad);
+    vector<RealT> H3(HS_ad.nonZeros());
+    ComputeUnit<RealT> unitAD(Device(VecWidth(8), NumThreads(1)), XS, HS_ad);
     unitAD.compile();
-    unitAD.execute(X);
+    unitAD.execute(Xf);
     
     Timer t2;
-    for(int i = 0; i < 100; ++i) unitAD.execute(X);
+    for(int i = 0; i < 100; ++i) unitAD.execute(Xf);
     t2.printTime("100 runs (AD)");
 
     unitAD.getResults(H3);
-    
     cout << "residual (AD): " << squaredError(H, H3) << endl;
 
     return 0;
