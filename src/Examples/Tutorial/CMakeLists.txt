@@ -9,5 +9,5 @@ file(GLOB sources ${SOURCE_DIR}/*.cpp ${SOURCE_DIR}/*.hpp)
 
 ADD_EXECUTABLE(tutorial ${sources})
 include_directories(${INCLUDE_DIRS} ${SOURCE_DIR} ${SOURCE_DIR}/../../)
-TARGET_LINK_LIBRARIES(tutorial Eigen3::Eigen Symbolic -lpthread)
+TARGET_LINK_LIBRARIES(tutorial Eigen3::Eigen Symbolic -lpthread igl::core)
 

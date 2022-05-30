@@ -1,12 +1,36 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+if(HAS_PARENT)
+  set(SYMBOLIC_TOPLEVEL_PROJECT OFF)
+else()
+  set(SYMBOLIC_TOPLEVEL_PROJECT ON)
+endif()
+
+## set the minimu, version so that some features of cmake can be used
+set(REQUIRED_CMAKE_VERSION "3.14.0")
+if(SYMBOLIC_TOPLEVEL_PROJECT)
+  cmake_minimum_required(VERSION ${REQUIRED_CMAKE_VERSION})
+else()
+  # Don't use cmake_minimum_required here to avoid implicitly overriding parent policies
+  if(${CMAKE_VERSION} VERSION_LESS ${REQUIRED_CMAKE_VERSION})
+    message(FATAL_ERROR "CMake required version to build SYMBOLIC_LIB is ${REQUIRED_CMAKE_VERSION}")
+  endif()
+endif()
+
 PROJECT(Symbolic C CXX)
+
+
+set(DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
+add_definitions( -DSYMBOLIC_DATA_DIR=${DATA_DIR} )
+
+
+## include eigen and libigl
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+include(eigen)
+include(libigl)
 
 if (MSVC)
   add_compile_options(/std:c++17 /wd4267 /wd4244 /D_CRT_SECURE_NO_WARNINGS)
-  include_directories(C:/Users/herholz/Documents/libigl/include)
 else()
   add_compile_options(-std=c++17 -O3)
-  include_directories(/usr/local/include/)
 endif()
 
 if (APPLE)
@@ -22,8 +46,6 @@ endif()
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_CACHEFILE_DIR ${CMAKE_BINARY_DIR}/build)
-
-find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
 
 add_subdirectory(src)
