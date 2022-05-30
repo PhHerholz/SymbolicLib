@@ -9,5 +9,5 @@ file(GLOB sources ${SOURCE_DIR}/*.cpp ${SOURCE_DIR}/*.hpp)
 
 add_executable(cotan ${sources})
 include_directories(${INCLUDE_DIRS} ${SOURCE_DIR} ${SOURCE_DIR}/../../)
-target_link_libraries(cotan Eigen3::Eigen Symbolic -lpthread)
+target_link_libraries(cotan Eigen3::Eigen Symbolic -lpthread igl::core)
 

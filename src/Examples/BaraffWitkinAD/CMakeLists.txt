@@ -9,5 +9,5 @@ file(GLOB sources ${SOURCE_DIR}/*.cpp ${SOURCE_DIR}/*.hpp ${SOURCE_DIR}/*.h)
 
 ADD_EXECUTABLE(baraffwitkinad ${sources})
 include_directories(${INCLUDE_DIRS} ${SOURCE_DIR} ${SOURCE_DIR}/../../)
-TARGET_LINK_LIBRARIES(baraffwitkinad Eigen3::Eigen Symbolic)
+TARGET_LINK_LIBRARIES(baraffwitkinad Eigen3::Eigen Symbolic igl::core)
 

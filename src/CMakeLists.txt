@@ -9,6 +9,7 @@ file(GLOB sources ${SOURCE_DIR}/*.cpp ${SOURCE_DIR}/*.hpp ${SOURCE_DIR}/*.h	)
 include_directories(${INCLUDE_DIRS} ${SOURCE_DIR})
 
 add_library(Symbolic ${sources})
-target_link_libraries(Symbolic ${LIBRARIES} Eigen3::Eigen -lpthread -ldl -lm -pthread)
+target_compile_features(Symbolic PUBLIC cxx_std_17)
+target_link_libraries(Symbolic ${LIBRARIES} Eigen3::Eigen -lpthread -ldl -lm -pthread igl::core)
 
 
