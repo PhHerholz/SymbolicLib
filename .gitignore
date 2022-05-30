@@ -31,3 +31,7 @@
 *.exe
 *.out
 *.app
+
+build/*
+external/*
+.vscode/settings.json
