@@ -3,10 +3,10 @@
 #include <igl/read_triangle_mesh.h>
 #pragma warning(pop)  
 
-#include "Symbolic.hpp"
-#include "ComputeUnit.hpp"
-#include "Timer.hpp"
-#include "SymbolicDifferentiation.hpp"
+#include "../../src/Symbolic.hpp"
+#include "../../src/ComputeUnit.hpp"
+#include "../../src/Timer.hpp"
+#include "../../src/SymbolicDifferentiation.hpp"
 #include "stretch_shear_forces.hpp"
 
 int main(int argc, char *argv[]) {

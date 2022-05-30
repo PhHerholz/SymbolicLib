@@ -6,11 +6,11 @@
 #include <fstream>
 #include <filesystem>
 
-#include "Symbolic.hpp"
-#include "SymbolicUtilities.hpp"
-#include "ComputeUnit.hpp"
-#include "Timer.hpp"
-#include "Utilities.hpp"
+#include "../../src/Symbolic.hpp"
+#include "../../src/SymbolicUtilities.hpp"
+#include "../../src/ComputeUnit.hpp"
+#include "../../src/Timer.hpp"
+#include "../../src/Utilities.hpp"
 
 #include "constraint_forces.hpp"
 #include "cloth.hpp"

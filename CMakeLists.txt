@@ -50,13 +50,12 @@ set(CMAKE_CACHEFILE_DIR ${CMAKE_BINARY_DIR}/build)
 
 add_subdirectory(src)
 
-add_subdirectory(src/Examples/BuildCotan)
+if(SYMBOLIC_TOPLEVEL_PROJECT)
+  add_subdirectory(Examples/BuildCotan)
+  add_subdirectory(Examples/BuildDualCotan)
+  add_subdirectory(Examples/BaraffWitkin)
+  add_subdirectory(Examples/BaraffWitkinAD)
+  add_subdirectory(Examples/Tutorial)
+endif()
 
-add_subdirectory(src/Examples/BuildDualCotan)
-
-add_subdirectory(src/Examples/BaraffWitkin)
-
-add_subdirectory(src/Examples/BaraffWitkinAD)
-
-add_subdirectory(src/Examples/Tutorial)
 
