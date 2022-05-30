@@ -5,9 +5,9 @@
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/SparseExtra>
 
-#include "Symbolic.hpp"
-#include "SymbolicDifferentiation.hpp"
-#include "ComputeUnit.hpp"
+#include "../../src/Symbolic.hpp"
+#include "../../src/SymbolicDifferentiation.hpp"
+#include "../../src/ComputeUnit.hpp"
 
 int main(int argc, char *argv[]) {
     using namespace std;
