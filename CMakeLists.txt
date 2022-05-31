@@ -22,15 +22,13 @@ set(DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
 add_definitions( -DSYMBOLIC_DATA_DIR=${DATA_DIR} )
 
 
-## include eigen and libigl
+## include eigen
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(eigen)
-include(libigl)
 
 if (MSVC)
   add_compile_options(/std:c++17 /wd4267 /wd4244 /D_CRT_SECURE_NO_WARNINGS)
 else()
-  add_compile_options(-std=c++17 -O3)
 endif()
 
 if (APPLE)
@@ -51,11 +49,7 @@ set(CMAKE_CACHEFILE_DIR ${CMAKE_BINARY_DIR}/build)
 add_subdirectory(src)
 
 if(SYMBOLIC_TOPLEVEL_PROJECT)
-  add_subdirectory(Examples/BuildCotan)
-  add_subdirectory(Examples/BuildDualCotan)
-  add_subdirectory(Examples/BaraffWitkin)
-  add_subdirectory(Examples/BaraffWitkinAD)
-  add_subdirectory(Examples/Tutorial)
+  add_subdirectory(Examples)
 endif()
 
 

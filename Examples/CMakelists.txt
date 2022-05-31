@@ -1,0 +1,7 @@
+include(libigl)
+
+add_subdirectory(BuildCotan)
+add_subdirectory(BuildDualCotan)
+add_subdirectory(BaraffWitkin)
+add_subdirectory(BaraffWitkinAD)
+add_subdirectory(Tutorial)
