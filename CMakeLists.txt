@@ -18,9 +18,6 @@ endif()
 PROJECT(Symbolic C CXX)
 
 
-set(DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
-add_definitions( -DSYMBOLIC_DATA_DIR=${DATA_DIR} )
-
 
 ## include eigen
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
