@@ -36,3 +36,4 @@ build/*
 external/*
 .vscode/settings.json
 Examples/dataPath.hpp
+src/ComputeUnitAvailability.h.in
