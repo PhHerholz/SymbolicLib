@@ -109,7 +109,7 @@ void ComputeUnit<RealT>::compile(const string& code) {
         
         if (device.numThreads > 1) {
 #ifdef __APPLE__
-            cmd += format(" -DNUMTHREADS=% -Xclang -fopenmp -L/opt/intel/lib -Wl,-rpath,/opt/intel/lib -liomp5", device.numThreads);
+            // cmd += format(" -DNUMTHREADS=% -Xclang -fopenmp -L/opt/intel/lib -Wl,-rpath,/opt/intel/lib -liomp5", device.numThreads);
 #else
             cmd += format(" -DNUMTHREADS=% -fopenmp -I/opt/rocm/llvm/include -L/opt/rocm/llvm/lib -Wl,-rpath,/opt/rocm/llvm/lib -liomp5", device.numThreads);
 #endif
