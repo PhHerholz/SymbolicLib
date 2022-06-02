@@ -23,10 +23,6 @@ PROJECT(Symbolic C CXX)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(eigen)
 
-if (MSVC)
-  add_compile_options(/std:c++17 /wd4267 /wd4244 /D_CRT_SECURE_NO_WARNINGS)
-else()
-endif()
 
 if (APPLE)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})

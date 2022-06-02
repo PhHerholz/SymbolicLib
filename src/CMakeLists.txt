@@ -20,6 +20,15 @@ else()
 endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ComputeUnitAvailability.h.in ${CMAKE_CURRENT_SOURCE_DIR}/ComputeUnitAvailability.h)
 
+## set various flags for different systems
+if (MSVC)
+    add_compile_options(/std:c++17 /wd4267 /wd4244 /D_CRT_SECURE_NO_WARNINGS)
+elseif (APPLE)
+    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -L /usr/local/opt/libomp/lib -I /usr/local/opt/libomp/include")
+    set(OpenMP_CXX_LIB_NAMES "omp")
+    set(OpenMP_omp_LIBRARY /usr/local/opt/libomp/lib/libomp.dylib)
+endif()
+
 file(GLOB sources ${SOURCE_DIR}/*.cpp ${SOURCE_DIR}/*.hpp ${SOURCE_DIR}/*.h	)
 include_directories(${INCLUDE_DIRS} ${SOURCE_DIR})
 
