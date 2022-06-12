@@ -68,7 +68,7 @@ ComputeUnit<double> unit(Device(VecWidth(4), NumThreads(8)), AS, BS);
 ```cpp
 unit.compile().execute(A);
 ```
- Retrieve the result and compare to a reverence solution.
+ Retrieve the result and compare to a reference solution.
 ```cpp
 Eigen::SparseMatrix<double> B = A.transpose() * A + A;
 Eigen::SparseMatrix<double> B2 = B;
