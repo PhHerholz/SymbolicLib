@@ -66,7 +66,7 @@ void Symbolic::Data::computeAlgebraicHash() {
         case MUL:
         case MULC:
             h = 1;
-            for(int i = 0; i < numChilds; ++i) {
+            for(unsigned int i = 0; i < numChilds; ++i) {
                 if(childs[i].op() == ADD) h *= hash(OpInfos[ADD].hash, childs[i].ahash());
                 else h *= childs[i].ahash();
             }
@@ -74,7 +74,7 @@ void Symbolic::Data::computeAlgebraicHash() {
             
         case ADD:
             h = 0;
-            for(int i = 0; i < numChilds; ++i) {
+            for(unsigned int i = 0; i < numChilds; ++i) {
                 if(childs[i].op() == MUL || childs[i].op() == MULC) h += hash(OpInfos[MUL].hash, childs[i].ahash());
                 else h += childs[i].ahash();
             }
@@ -106,7 +106,7 @@ void Symbolic::Data::computeAlgebraicHash() {
             
             h = OpInfos[op].hash;
             
-            for(int i = 0; i < numChilds; ++i) {
+            for(unsigned int i = 0; i < numChilds; ++i) {
                 const  auto opi = childs[i].op();
                 if(opi == MULC || opi == MUL || opi == ADD) {
                     h = hash(h, hash(OpInfos[opi].hash, childs[i].ahash()));
@@ -123,7 +123,7 @@ void Symbolic::Data::computeComplexity() {
     } else {
         unsigned int tmp = 0;
        
-        for (int i = 0; i < numChilds; ++i)
+        for (unsigned int i = 0; i < numChilds; ++i)
             tmp += childs[i].complexity();
 
         complexity = std::min(255u, numChilds * OpInfos[op].cost + tmp);

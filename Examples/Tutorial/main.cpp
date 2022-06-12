@@ -8,11 +8,10 @@
 #include "../../src/Symbolic.hpp"
 #include "../../src/SymbolicDifferentiation.hpp"
 #include "../../src/ComputeUnit.hpp"
-
+#include "../../src/ComputeUnitAvailability.h"
 #include "../dataPath.hpp"
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     using namespace std;
     using namespace Sym;
 
@@ -60,11 +59,13 @@ int main(int argc, char *argv[])
 
     cout << "difference: " << (B - B2).norm() << endl;
 
-    // Generating a program for cuda devices just requires to set device parameters
-    ComputeUnit<double> unitCuda(Device(UseCuda(), ThreadsPerBlock(128)), AS, BS);
-    unitCuda.compile().execute(A).getResults(B2);
+    if (CUDA_FOUND) {
+        // Generating a program for cuda devices just requires to set device parameters
+        ComputeUnit<double> unitCuda(Device(UseCuda(), ThreadsPerBlock(128)), AS, BS);
+        unitCuda.compile().execute(A).getResults(B2);
 
-    cout << "difference cuda: " << (B - B2).norm() << endl;
+        cout << "difference cuda: " << (B - B2).norm() << endl;
+    }
 
     return 0;
 }

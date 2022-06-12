@@ -24,10 +24,10 @@ void differentiate(const pair<Symbolic, Symbolic>& x, vector<pair<Symbolic, Symb
             
             
         case MUL:
-            for (int i = 0; i < expr.numChilds(); ++i) {
+            for (unsigned int i = 0; i < expr.numChilds(); ++i) {
                 std::vector<Symbolic> childsI;
                 
-                for (int j = 0; j < expr.numChilds(); ++j) {
+                for (unsigned int j = 0; j < expr.numChilds(); ++j) {
                     if (j != i) childsI.push_back(expr[j]);
                 }
                 
@@ -62,7 +62,7 @@ void differentiate(const pair<Symbolic, Symbolic>& x, vector<pair<Symbolic, Symb
 
 
 double evaluate(const OpType id, const std::vector<double>& cvals) {
-    double ret;
+    double ret = -1.;
     
     switch (id) {
         case ADD:

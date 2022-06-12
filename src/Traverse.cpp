@@ -29,7 +29,7 @@ void preOrderTraverse(const Symbolic& x, std::function<bool(const Symbolic&)> fu
                     exprStack.resize(n0 + nc);
                     auto it = exprStack.begin() + n0;
                     const Symbolic* ptr = &((*x)[0]);
-                    for(int i = 0; i < nc; ++i) *it++ = ptr++;
+                    for(unsigned int i = 0; i < nc; ++i) *it++ = ptr++;
                 }
             }
         }

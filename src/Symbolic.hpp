@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Operations.hpp"
-//#include "Utilities.hpp"
 #include <iostream>
 #include <array>
 #include <assert.h>
@@ -203,9 +202,9 @@ class ExpressionBlock {
 public:
     Symbolic x;
  
-    hash_t structureHash;
+    hash_t structureHash = 0;
     
-    int level;
+    int level = 0;
     
     std::vector<int> childs;
     
