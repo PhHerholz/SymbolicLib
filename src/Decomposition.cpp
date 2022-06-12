@@ -5,15 +5,13 @@
 #include "Utilities.hpp"
 #include "ComputeKernel.hpp"
 #include "Timer.hpp"
-#include "ThreadTools.h"
 #include <map>
 #include <set>
 #include <memory>
 #include <unordered_set>
 #include <unordered_map>
 #include <algorithm>
-#include <thread>
-#include <mutex>
+
 
 using namespace std;
 
@@ -97,78 +95,11 @@ public:
     }
     
     
-    Symbolic extractExpression2(const int variableGroupId) {
-        if(x.op() != NOOP) return x;
-        
-        if(status == FIXED_NODE && childs.empty()) {
-            x = fullx;
-            structureHash = x.computeStructureHash();
-            return x;
-        }
-        
-        auto preFun = [&](const Symbolic& y) {
-            auto itc = childs.find(y.ahash());
-            
-            if(itc != childs.end() && itc->second->status != MERGED) {
-                return Symbolic(itc->second->id, variableGroupId);
-            }
-            
-            return y;
-        };
-        
-        auto postFun = [&](const Symbolic& y, std::vector<std::pair<Symbolic, hash_t>>& ch){
-        
-            if(y.op() == FIXED) {
-                return make_pair(y[0], VarHash);
-            } else if(y.numChilds() == 0) {
-                return make_pair(y, y.op() == VAR ? VarHash : ConstHash);
-            }
-                
-            // is y a child of this block?
-            auto itc = childs.find(y.ahash());
-            
-            if(itc != childs.end()) {
-                if(itc->second->status == MERGED) {
-                    const auto xpr = itc->second->extractExpression(variableGroupId); // careful not to substitute xpr in make_pair. Eval order is not determined!
-                    return make_pair(xpr, itc->second->structureHash);
-                }
-            }
-            
-            if(OpInfos[y.op()].commutative)
-                sortBy(ch, [](const auto& x){return x.second;});
-            
-            // we use a raw array to 'move' childs into and then pass it on to a new Symbolic instance which
-            // will take ownership. We have to be careful here but it is worth it in terms of performance.
-            
-            auto hashes = mapData(ch, [](const auto& c){return c.second;});
-            hashes.push_back(OpInfos[y.op()].hash);
-            
-            Symbolic* childs2 = new Symbolic[y.numChilds()];
-            auto it = childs2;
-            for(auto& c : ch) *it++ = move(c.first);
-            
-            return make_pair(Symbolic(y.op(), childs2, y.numChilds()), Sym::hash(hashes));
-        };
-        
-        tie(x, structureHash) = traverseGenerate<pair<Symbolic, hash_t>>(fullx, preFun, postFun);
-
-        if(x.op() != BLOCK && x.op() != ASSIGN && status != MERGED) x = Symbolic(ASSIGN, Symbolic(id, variableGroupId), x);
-               
-        return x;
-    }
-    
     Symbolic extractExpression(const int variableGroupId) {
         
         bool cached = true;
         
         if(x.op() != NOOP) return x;
-        
-        if(0)
-        if(status == FIXED_NODE && childs.empty()) {
-            x = fullx;
-            structureHash = x.computeStructureHash();
-            return x;
-        }
         
         vector<pair<Symbolic, hash_t>> stack;
         unordered_map<long long, pair<Symbolic, hash_t>, IdentityHash<long long>> cache;

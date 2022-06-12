@@ -12,7 +12,6 @@
 #include "../../src/Timer.hpp"
 #include "../../src/Utilities.hpp"
 
-#include "constraint_forces.hpp"
 #include "cloth.hpp"
 
 #include "../dataPath.hpp"

@@ -9,7 +9,6 @@ using namespace std;
 namespace Sym {
 
 void preOrderTraverse(const Symbolic& x, std::function<bool(const Symbolic&)> fun, const bool unique) {
-    //std::vector<const Symbolic*> exprStack{&x};
     
     std::unordered_set<long long> visited;
     static std::vector<const Symbolic*> exprStack;

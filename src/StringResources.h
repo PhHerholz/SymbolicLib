@@ -153,7 +153,7 @@ const std::string cudaFooter =
 "\n"
 "    Timer t;\n"
 "    for (int i = 0; i < 100; ++i) run();\n"
-"    t.printTime();\n"
+"    t.printTime(\"100 runs\");\n"
 "\n"
 "    return 0;\n"
 "}\n"

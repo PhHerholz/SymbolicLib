@@ -44,9 +44,9 @@ public:
         
         template<class... T>
         Data(const T& ... args) : op(0), numChilds(0), childs(nullptr) {
-          //  std::cout << "constructor not implemented: " << print_pack_types<T...>() << std::endl;
+            //std::cout << "constructor not implemented: " << print_pack_types<T...>() << std::endl;
+            std::cout << "constructor not implemented .. exiting ... " << std::endl;
             exit(0);
-            init();
         }
         
         template<class NumberT>

@@ -7,8 +7,6 @@
 
 namespace Sym {
 
-void prePostOrderTraverseThreaded(const Symbolic& x, std::function<bool(const Symbolic&)> preFun, std::function<void(const Symbolic&)> postFun, const int tid) ;
-
 void prePostOrderTraverse(const Symbolic& x, std::function<bool(const Symbolic&)> preFun ,std::function<void(const Symbolic&)> postFun);
 
 void postOrderTraverse(const Symbolic& x, std::function<void(const Symbolic&)> fun);

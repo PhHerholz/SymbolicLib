@@ -3,7 +3,6 @@
 #include <Eigen/Sparse>
 #include "stretch_shear_forces.hpp"
 #include "bend_quadratic_forces.hpp"
-#include "constraint_forces.hpp"
 
 template<class NT>
 class Cloth {
