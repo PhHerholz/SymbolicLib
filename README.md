@@ -77,7 +77,12 @@ unit.getResults(B2);
 
 cout << "difference: " << (B - B2).norm() << endl;
 ```
-Generating a program for cuda devices just requires setting the `UseCuda` device parameter.
+Generating a program for AMD HIP devices just requires setting the `UseHIP` device parameter.
+```cpp
+ComputeUnit<double> unitHIP(Device(UseHIP(), ThreadsPerBlock(128)), AS, BS);
+unitHIP.compile().execute(A).getResults(B2);
+```
+Cuda devices can be used in the same way.
 ```cpp
 ComputeUnit<double> unitCuda(Device(UseCuda(), ThreadsPerBlock(128)), AS, BS);
 unitCuda.compile().execute(A).getResults(B2);
