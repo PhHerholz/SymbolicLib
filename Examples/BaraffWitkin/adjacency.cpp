@@ -55,32 +55,27 @@ void createFacePairEdgeListWith4VerticeIDs(
                 v0 = E(e, 0);
                 v1 = E(e, 1);
                 v2 = F(faces.second, 2);
-            }
-            else {
+            } else {
                 v0 = E(e, 1);
                 v1 = E(e, 0);
                 v2 = F(faces.second, 1);
             }
-        }
-        else if (F(faces.second, 1) == E(e, 0)) {
+        } else if (F(faces.second, 1) == E(e, 0)) {
             if (F(faces.second, 0) == E(e, 1)) {
                 v0 = E(e, 1);
                 v1 = E(e, 0);
                 v2 = F(faces.second, 2);
-            }
-            else {
+            } else {
                 v0 = E(e, 0);
                 v1 = E(e, 1);
                 v2 = F(faces.second, 0);
             }
-        }
-        else {
+        } else {
             if (F(faces.second, 0) == E(e, 1)) {
                 v0 = E(e, 0);
                 v1 = E(e, 1);
                 v2 = F(faces.second, 1);
-            }
-            else {
+            } else {
                 v0 = E(e, 1);
                 v1 = E(e, 0);
                 v2 = F(faces.second, 0);
@@ -144,32 +139,27 @@ void createFacePairEdgeListWith4VerticeIDs(
                     v0 = E(e, 0);
                     v1 = E(e, 1);
                     v2 = F(faces.second, 2);
-                }
-                else {
+                } else {
                     v0 = E(e, 1);
                     v1 = E(e, 0);
                     v2 = F(faces.second, 1);
                 }
-            }
-            else if (F(faces.second, 1) == E(e, 0)) {
+            } else if (F(faces.second, 1) == E(e, 0)) {
                 if (F(faces.second, 0) == E(e, 1)) {
                     v0 = E(e, 1);
                     v1 = E(e, 0);
                     v2 = F(faces.second, 2);
-                }
-                else {
+                } else {
                     v0 = E(e, 0);
                     v1 = E(e, 1);
                     v2 = F(faces.second, 0);
                 }
-            }
-            else {
+            } else {
                 if (F(faces.second, 0) == E(e, 1)) {
                     v0 = E(e, 0);
                     v1 = E(e, 1);
                     v2 = F(faces.second, 1);
-                }
-                else {
+                } else {
                     v0 = E(e, 1);
                     v1 = E(e, 0);
                     v2 = F(faces.second, 0);
@@ -331,8 +321,7 @@ void adjacentFacesToEdge(
             if (ring1[i] == ring2[j] && !found_first) {
                 faces.first = ring1[i];
                 found_first = true;
-            }
-            else if (ring1[i] == ring2[j] && found_first)
+            } else if (ring1[i] == ring2[j] && found_first)
                 faces.second = ring1[i];
         }
     }

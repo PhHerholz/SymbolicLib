@@ -20,11 +20,9 @@ Symbolic makeMul(const vector<Symbolic>& childs) {
 	for (auto& c : childs) {
 		if (c.op() == CONST) {
 			f *= c.constant();
-		}
-		else if (isSmallConstant(c.ahash())) {
+		} else if (isSmallConstant(c.ahash())) {
 			f *= (double)c.ahash();
-		}
-		else childs2.push_back(c);
+		} else childs2.push_back(c);
 	}
 
 	Symbolic ret;
@@ -47,8 +45,7 @@ Symbolic makeAddition(vector<Symbolic> operands) {
 		if (x.op() == CONST) {
 			constant += x.constant();
 			return true;
-		}
-		else return false;
+		} else return false;
 
 		}), operands.end());
 
@@ -65,15 +62,15 @@ Symbolic makeSymbolic(const unsigned char op, vector<Symbolic> operands) {
 	Symbolic ret;
 
 	switch (op) {
-	case ADD: ret = makeAddition(operands);
-		break;
+		case ADD: ret = makeAddition(operands);
+			break;
 
-	case MUL:
-	case MULC:
-		ret = makeMul(operands);
-		break;
+		case MUL:
+		case MULC:
+			ret = makeMul(operands);
+			break;
 
-	default: ret = Symbolic(op, operands);
+		default: ret = Symbolic(op, operands);
 	}
 
 	if (isSmallConstant(ret.ahash())) return (double)ret.ahash();
@@ -144,37 +141,37 @@ Symbolic flattenDivAndMul(const Symbolic& expr) {
 	vector<Symbolic> childs;
 
 	switch (expr.op()) {
-	case MUL:
-	case MULC:
+		case MUL:
+		case MULC:
 
-		for (auto& c : mapData(expr, [](const auto& x) {return flattenDivAndMul(x); })) {
+			for (auto& c : mapData(expr, [](const auto& x) {return flattenDivAndMul(x); })) {
 
-			if (isMul(c)) for (auto& cc : c) childs.push_back(cc);
-			else childs.push_back(c);
+				if (isMul(c)) for (auto& cc : c) childs.push_back(cc);
+				else childs.push_back(c);
+			}
+
+			break;
+
+		case SQRT: {
+			auto rad = flattenDivAndMul(expr[0]);
+			if (isMul(rad)) for (auto& c : rad) childs.push_back(makePower(c, 0.5));
+			else childs.push_back(makePower(rad, 0.5));
+			break;
 		}
 
-		break;
+		case DIV: {
+			auto nom = flattenDivAndMul(expr[0]);
+			auto den = flattenDivAndMul(expr[1]);
 
-	case SQRT: {
-		auto rad = flattenDivAndMul(expr[0]);
-		if (isMul(rad)) for (auto& c : rad) childs.push_back(makePower(c, 0.5));
-		else childs.push_back(makePower(rad, 0.5));
-		break;
-	}
+			if (isMul(nom)) copy(nom.begin(), nom.end(), back_inserter(childs));
+			else childs.push_back(nom);
 
-	case DIV: {
-		auto nom = flattenDivAndMul(expr[0]);
-		auto den = flattenDivAndMul(expr[1]);
+			if (isMul(den)) for (auto& c : den) childs.push_back(makePower(c, -1.));
+			else childs.push_back(makePower(den, -1.));
+			break;
+		}
 
-		if (isMul(nom)) copy(nom.begin(), nom.end(), back_inserter(childs));
-		else childs.push_back(nom);
-
-		if (isMul(den)) for (auto& c : den) childs.push_back(makePower(c, -1.));
-		else childs.push_back(makePower(den, -1.));
-		break;
-	}
-
-	default: return expr;
+		default: return expr;
 
 	}
 
@@ -202,27 +199,21 @@ Symbolic optimizeProducts(const Symbolic& x) {
 
 		if (c.first.op() == CONST) {
 			f *= pow(c.first.constant(), c.second);
-		}
-		else if (c.second < 0) {
+		} else if (c.second < 0) {
 			if (floor(c.second) == c.second) {
 				for (int i = 0; i < floor(-c.second); ++i) den.push_back(c.first);
-			}
-			else if (floor(2 * c.second) == 2 * c.second) {
+			} else if (floor(2 * c.second) == 2 * c.second) {
 				for (int i = 0; i < floor(-c.second); ++i) den.push_back(c.first);
 				denR.push_back(c.first);
-			}
-			else assert(0);
+			} else assert(0);
 
-		}
-		else if (c.second > 0) {
+		} else if (c.second > 0) {
 			if (floor(c.second) == c.second) {
 				for (int i = 0; i < floor(c.second); ++i) nom.push_back(c.first);
-			}
-			else if (floor(2 * c.second) == 2 * c.second) {
+			} else if (floor(2 * c.second) == 2 * c.second) {
 				for (int i = 0; i < floor(c.second); ++i) nom.push_back(c.first);
 				nomR.push_back(c.first);
-			}
-			else assert(0);
+			} else assert(0);
 		}
 	}
 
@@ -231,12 +222,10 @@ Symbolic optimizeProducts(const Symbolic& x) {
 	if (!nomR.empty()) {
 		if (denR.empty()) {
 			nom.emplace_back(SQRT, makeMul(nomR));
-		}
-		else {
+		} else {
 			nom.emplace_back(SQRT, makeMul(nomR) / makeMul(denR));
 		}
-	}
-	else if (!denR.empty()) {
+	} else if (!denR.empty()) {
 		den.emplace_back(SQRT, makeMul(denR));
 	}
 
@@ -340,13 +329,11 @@ Symbolic pullFactor(Symbolic x) {
 			if (fc.op() == MUL) {// 'c' could be a multiplication with a single operand
 				for (auto& cc : flattenMultiplications(c))
 					factors.push_back(cc);
-			}
-			else factors.push_back(fc);
+			} else factors.push_back(fc);
 
 			summands.push_back(move(factors));
 
-		}
-		else summands.push_back({ c });
+		} else summands.push_back({ c });
 	}
 
 	// find factor(s) that are shared by as many summands as possible
@@ -383,8 +370,7 @@ Symbolic pullFactor(Symbolic x) {
 
 			++it;
 
-		}
-		else {
+		} else {
 			rest.emplace_back(MUL, summands[i]);
 		}
 	}
@@ -407,8 +393,7 @@ Symbolic findNegative(const Symbolic& expr) {
 
 		if (cnt % 2) return Symbolic(NEG, makeMul(childs));
 		else return makeMul(childs);
-	}
-	else if (expr.op() == ADD) {
+	} else if (expr.op() == ADD) {
 
 		vector<Symbolic> positive;
 		vector<Symbolic> negative;
@@ -451,18 +436,18 @@ Symbolic simplify(const Symbolic& expr) {
 }
 
 Symbolic removeConstantExpressions(const Symbolic& x) {
-    return traverseGenerate<Symbolic>(x,
-        [](const Symbolic& x) {
-        return x;
-            if(isSmallConstant(x.ahash())) {
-                return Symbolic((double)x.ahash());
-            } else return x;
-        }, [](const Symbolic& x, const std::vector<Symbolic>& childs) {
+	return traverseGenerate<Symbolic>(x,
+		[](const Symbolic& x) {
+			return x;
+			if (isSmallConstant(x.ahash())) {
+				return Symbolic((double)x.ahash());
+			} else return x;
+		}, [](const Symbolic& x, const std::vector<Symbolic>& childs) {
 
-            if (x.numChilds() == 0) return x;
-            return makeSymbolic(x.op(), childs);
+			if (x.numChilds() == 0) return x;
+			return makeSymbolic(x.op(), childs);
 
-        }, true);
+		}, true);
 }
 
 Symbolic referenceRedundant(Symbolic& x) {
@@ -495,8 +480,7 @@ Symbolic referenceRedundant2(const Symbolic& x) {
 		if (it != cache.end()) {
 			stack.push_back(it->second);
 			return false;
-		}
-		else return true;
+		} else return true;
 		}, [&](const auto& y) {
 			auto y2 = Symbolic(y.op(), std::vector<Symbolic>(stack.end() - y.numChilds(), stack.end()));
 			stack.erase(stack.end() - y.numChilds(), stack.end());
@@ -504,8 +488,7 @@ Symbolic referenceRedundant2(const Symbolic& x) {
 			auto it = cache.find(y2.ahash());
 			if (it != cache.end()) {
 				y2 = it->second;
-			}
-			else {
+			} else {
 				cache[y2.ahash()] = y2;
 			}
 

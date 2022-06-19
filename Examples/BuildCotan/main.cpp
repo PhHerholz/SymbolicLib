@@ -16,7 +16,7 @@
 using namespace std;
 
 template <class TNum>
-void buildMass(Eigen::Matrix<TNum, -1, -1> &V, Eigen::MatrixXi &F, Eigen::SparseMatrix<TNum> &M)
+void buildMass(Eigen::Matrix<TNum, -1, -1>& V, Eigen::MatrixXi& F, Eigen::SparseMatrix<TNum>& M)
 {
     M.resize(V.rows(), V.rows());
     M.setIdentity();
@@ -37,7 +37,7 @@ void buildMass(Eigen::Matrix<TNum, -1, -1> &V, Eigen::MatrixXi &F, Eigen::Sparse
 }
 
 template <class TNum>
-std::array<long, 2> buildCotan(Eigen::Matrix<TNum, -1, -1> &V, Eigen::MatrixXi &F, Eigen::SparseMatrix<TNum> &L, Eigen::SparseMatrix<TNum> &M)
+std::array<long, 2> buildCotan(Eigen::Matrix<TNum, -1, -1>& V, Eigen::MatrixXi& F, Eigen::SparseMatrix<TNum>& L, Eigen::SparseMatrix<TNum>& M)
 {
     std::array<long, 2> ret;
 
@@ -75,7 +75,7 @@ std::array<long, 2> buildCotan(Eigen::Matrix<TNum, -1, -1> &V, Eigen::MatrixXi &
     return ret;
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
 
     using namespace Sym;

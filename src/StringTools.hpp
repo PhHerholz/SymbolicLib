@@ -45,18 +45,18 @@ inline std::string printNumber(const double d) {
     std::string ret = ss.str();
     std::string exp;
     auto pose = ret.find('e');
-    
-    if(pose != std::string::npos) {
+
+    if (pose != std::string::npos) {
         exp = ret.substr(pose, ret.size() - pose);
         ret.erase(pose);
     }
-    
-    while(!ret.empty() && ret.back() == '0') ret.pop_back();
-    
-    if(!exp.empty() && exp != "e+00") {
+
+    while (!ret.empty() && ret.back() == '0') ret.pop_back();
+
+    if (!exp.empty() && exp != "e+00") {
         ret += exp;
     }
-    
+
     return ret;
 }
 
@@ -64,24 +64,24 @@ template<typename... Ts>
 std::string format(const std::string& str, Ts... args) {
     std::vector<std::string> replaceStrings;
     internal::format(str, replaceStrings, args...);
-    
-    if(replaceStrings.empty()) return str;
-    
+
+    if (replaceStrings.empty()) return str;
+
     std::stringstream ret;
-    
+
     int currStart = 0;
     auto it = replaceStrings.begin();
-    
-    for(int i = 0; i < str.size(); ++i)  {
-        if(str[i] == '%') {
+
+    for (int i = 0; i < str.size(); ++i) {
+        if (str[i] == '%') {
             ret << str.substr(currStart, i - currStart) << *it++;
             currStart = i + 1;
-            if(it == replaceStrings.end()) break;
+            if (it == replaceStrings.end()) break;
         }
     }
-    
+
     ret << str.substr(currStart, str.size() - currStart);
-    
+
     return ret.str();
 }
 
@@ -89,7 +89,7 @@ template<class Cont>
 std::string toArrayString(const Cont& c) {
     std::stringstream ret;
     ret << "{";
-    for(auto& x : c) ret << std::to_string(x) << ", ";
+    for (auto& x : c) ret << std::to_string(x) << ", ";
     auto str = ret.str();
     str.pop_back();
     str.back() = '}';
