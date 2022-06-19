@@ -77,7 +77,8 @@ void ComputeUnit<RealT>::compile(const string& code)
 {
 
     // write code file
-    ofstream file(string("cpuCode.") + (device.cudaDevice ? "cu" : "cpp"));
+    string fname = (device.cudaDevice ? "cudaCode.cu" : (device.hipDevice ? "hipCode.cpp" : "cpuCode.cpp" ));
+    ofstream file(fname);
     file << code;
     file.close();
 
@@ -86,10 +87,11 @@ void ComputeUnit<RealT>::compile(const string& code)
 
     if(device.cudaDevice)
     {
-        cmd += " && nvcc -I. --shared -O3 -o cpuCode.dll cpuCode.cu ";
+        cmd += " && nvcc -I. --shared -O3 -o cudaCode.dll cudaCode.cu ";
         cmd += "-arch=sm_52 -gencode=arch=compute_52,code=sm_52  -gencode=arch=compute_60,code=sm_60   -gencode=arch=compute_61,code=sm_61   -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_75,code=sm_75  -gencode=arch=compute_80,code=sm_80 -gencode=arch=compute_86,code=sm_86  -gencode=arch=compute_87,code=sm_87 -gencode=arch=compute_87,code=compute_87";
-    } else
-    {
+    } else if(device.hipDevice) {
+        std::cout << "HIP not supported on Windows." << std::endl;
+    } else {
         cmd += "&& cl cpuCode.cpp /LD /O2 /arch:AVX2 /std:c++17 /fp:fast /EHsc";
 
         if(device.numThreads > 1)
@@ -100,7 +102,7 @@ void ComputeUnit<RealT>::compile(const string& code)
 
     system(cmd.c_str());
 
-    libHandle = (void*)LoadLibrary("cpuCode.dll");
+    libHandle = (void*)LoadLibrary(device.cudaDevice ? "cudaCode.dll" : "cpuCode.dll");
 
     if(libHandle != nullptr)
     {
@@ -114,19 +116,20 @@ void ComputeUnit<RealT>::compile(const string& code)
 #else
     string cmd;
 
-    if(device.cudaDevice)
-    {
-        cmd = "nvcc -I../../data/ -Xcompiler '-fPIC -shared' -O3 -o cpucode.so cpuCode.cu";
-    } else
-    {
-        cmd = "clang++ -shared -fPIC -ffast-math -fno-trapping-math -fno-math-errno -fno-signed-zeros -O3 -std=c++17 -msse4.2 -mavx2 -mfma cpuCode.cpp -ocpucode.so";
+    if(device.cudaDevice)  {
+        cmd = "nvcc -I../../data/ -Xcompiler '-fPIC -shared' -O3 -o cpuCode.so cudaCode.cu";
+    } else if(device.hipDevice) {
+        cmd = "opt/rocm/bin/hipcc -Xcompiler '-fPIC -shared' -O3 -ohipCode.so hipCode.cpp";
+    } else {
+        cmd = "clang++ -shared -fPIC -ffast-math -fno-trapping-math -fno-math-errno -fno-signed-zeros -O3 -std=c++17 -msse4.2 -mavx2 -mfma cpuCode.cpp -ocpuCode.so";
 
         if(device.numThreads > 1)
         {
 #ifdef __APPLE__
             cmd += format(" -DNUMTHREADS=% -Xclang -fopenmp -L/usr/local/opt/libomp/lib -Wl,-rpath,/opt/intel/lib -lomp", device.numThreads);
 #else
-            cmd += format(" -DNUMTHREADS=% -fopenmp -I/opt/rocm/llvm/include -L/opt/rocm/llvm/lib -Wl,-rpath,/opt/rocm/llvm/lib -liomp5", device.numThreads);
+          //  cmd += format(" -DNUMTHREADS=% -fopenmp -I/opt/rocm/llvm/include -L/opt/rocm/llvm/lib -Wl,-rpath,/opt/rocm/llvm/lib -liomp5", device.numThreads);
+            cmd += format(" -DNUMTHREADS=% -fopenmp", device.numThreads);
 #endif
         }
     }
@@ -139,7 +142,7 @@ void ComputeUnit<RealT>::compile(const string& code)
     }
 
     // link dynamic library and get function pointers
-    libHandle = dlopen("./cpucode.so", RTLD_LAZY);
+    libHandle = dlopen((device.cudaDevice ? "cudaCode.so" : (device.hipDevice ? "hipCode.so" : "cpuCode.so" )), RTLD_LAZY);
 
     finishFunc = (decltype(finishFunc))dlsym(libHandle, "finish");
     initFunc = (decltype(initFunc))dlsym(libHandle, "init");
@@ -345,9 +348,11 @@ void ComputeUnit<RealT>::init()
     {
         file << format("KERNEL void k%(const RealT* restrict x, const RealT* restrict c, RealT* y, const unsigned int* restrict p) {\n", i++);
 
-        if(device.cudaDevice)
+        if(device.cudaDevice || device.hipDevice)
         {
-            file << "\tconst unsigned int i = threadIdx.x + blockDim.x * blockIdx.x;\n\n";
+            file << "\tconst unsigned int i = ";
+            file << (device.cudaDevice ? "threadIdx.x + blockDim.x * blockIdx.x" : "hipThreadIdx_x + hipBlockDim_x * hipBlockIdx_x");
+            file << ";\n\n";
             file << format("\tif(i < %) {\n", k.numInstances());
             file << indent(k.generateKernelCode(), 2) << endl;
             file << "\t}\n";
@@ -378,7 +383,7 @@ void ComputeUnit<RealT>::init()
     file << "\tSYNC;\n"
         "}\n";
 
-    file << (device.cudaDevice ? cudaFooter : cpuFooter);
+    file << (device.cudaDevice ? cudaFooter : (device.hipDevice ? hipFooter : cpuFooter));
     code = file.str();
 }
 

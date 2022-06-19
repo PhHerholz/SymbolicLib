@@ -22,6 +22,7 @@ using NumThreads = NamedType<int, struct NumThreadsTag>;
 using VecWidth = NamedType<int, struct VecWidthTag>;
 using DecompositionThreshold = NamedType<int, struct DecompositionThresholdTag>;
 
+struct UseHIP {};
 struct UseCuda {};
 struct UseSinglePrecision {};
 
@@ -33,6 +34,7 @@ public:
     unsigned int decompositionThreshold = 6;
     bool singlePrecision = false;
     bool cudaDevice = false;
+    bool hipDevice = false;
 
 private:
 
@@ -56,8 +58,15 @@ private:
         singlePrecision = true;
     }
 
+    void set(const UseHIP&) {
+         hipDevice = true;
+         cudaDevice = false;
+         vectorWidth = 0;
+     }
+    
     void set(const UseCuda&) {
         cudaDevice = true;
+        hipDevice = false;
         vectorWidth = 0;
     }
 
