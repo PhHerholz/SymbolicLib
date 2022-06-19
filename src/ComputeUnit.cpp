@@ -142,7 +142,7 @@ void ComputeUnit<RealT>::compile(const string& code)
     }
 
     // link dynamic library and get function pointers
-    libHandle = dlopen((device.cudaDevice ? "cudaCode.so" : (device.hipDevice ? "hipCode.so" : "cpuCode.so" )), RTLD_LAZY);
+    libHandle = dlopen((device.cudaDevice ? "./cudaCode.so" : (device.hipDevice ? "./hipCode.so" : "./cpuCode.so" )), RTLD_LAZY);
 
     finishFunc = (decltype(finishFunc))dlsym(libHandle, "finish");
     initFunc = (decltype(initFunc))dlsym(libHandle, "init");
