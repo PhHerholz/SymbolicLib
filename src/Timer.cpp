@@ -12,17 +12,17 @@ void Timer::unsilence() {
 }
 
 Timer::Timer(const std::string& str)
-: start(clock::now()), name(str), sum(clock::duration::zero()) {}
+    : start(clock::now()), name(str), sum(clock::duration::zero()) {}
 
 Timer::clock::duration
 Timer::elapsed() const {
-    if(isPaused) return sum;
+    if (isPaused) return sum;
     else return clock::now() - start + sum;
 }
 
 void
 Timer::pause() {
-    if(!isPaused) {
+    if (!isPaused) {
         isPaused = true;
         sum += clock::now() - start;
     }
@@ -30,7 +30,7 @@ Timer::pause() {
 
 void
 Timer::resume() {
-    if(isPaused)  {
+    if (isPaused) {
         isPaused = false;
         start = clock::now();
     }
@@ -70,29 +70,29 @@ Timer::minutes() const {
 void
 Timer::printTime(const std::string& str) {
     using namespace std::chrono;
-    
-    if(!isSilent) {
+
+    if (!isSilent) {
         const auto diff = elapsed();
-        
+
         int us = static_cast<int>(duration_cast<std::chrono::microseconds>(diff).count());
         int ms = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(diff).count());
         int s = static_cast<int>(std::chrono::duration_cast<std::chrono::seconds>(diff).count());
         int m = static_cast<int>(std::chrono::duration_cast<std::chrono::minutes>(diff).count());
         int h = static_cast<int>(std::chrono::duration_cast<std::chrono::hours>(diff).count());
-        
+
         us -= 1000 * ms;
         ms -= 1000 * s;
         s -= 60 * m;
         m -= 60 * h;
-             
+
         std::cout << name << " " << str << ": ";
-        if(h) std::cout << h << "h ";
-        if(m || h) std::cout << m << "m ";
-        if(s || m || h) std::cout << s << "s ";
-        if(s || m || h || ms) std::cout << ms << "ms ";
-        
+        if (h) std::cout << h << "h ";
+        if (m || h) std::cout << m << "m ";
+        if (s || m || h) std::cout << s << "s ";
+        if (s || m || h || ms) std::cout << ms << "ms ";
+
         std::cout << us << "us" << std::endl << std::flush;
     }
-    
+
     reset();
 }

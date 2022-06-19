@@ -12,7 +12,7 @@
 
 #include "../dataPath.hpp"
 
-int loadTetMesh(std::string fname, Eigen::MatrixXd &V, Eigen::MatrixXi &T)
+int loadTetMesh(std::string fname, Eigen::MatrixXd& V, Eigen::MatrixXi& T)
 {
     std::ifstream file(fname);
     if (!file.is_open())
@@ -42,7 +42,7 @@ int loadTetMesh(std::string fname, Eigen::MatrixXd &V, Eigen::MatrixXi &T)
     return 1;
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     using namespace Sym;
 

@@ -29,6 +29,6 @@ struct Timer
     long long microseconds() const;
     int minutes() const;
     int hours() const;
-    void printTime(const std::string& str = "") ;
+    void printTime(const std::string& str = "");
 };
 

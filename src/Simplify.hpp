@@ -29,20 +29,20 @@ template<class... Args>
 void referenceRedundant(Args&... args) {
     std::vector<std::pair<Symbolic*, size_t>> data;
     flattenContainerData(data, args...);
-    
+
     std::vector<Symbolic> expressions;
-    for(auto& x : data) {
-        for(int i = 0; i < x.second; ++i) {
+    for (auto& x : data) {
+        for (int i = 0; i < x.second; ++i) {
             expressions.push_back(x.first[i]);
         }
     }
-    
+
     Symbolic blockX(BLOCK, expressions);
     auto ret = referenceRedundant(blockX);
-    
+
     size_t cnt = 0;
-    for(auto& x : data) {
-        for(int i = 0; i < x.second; ++i) {
+    for (auto& x : data) {
+        for (int i = 0; i < x.second; ++i) {
             x.first[i] = ret[cnt++];
         }
     }

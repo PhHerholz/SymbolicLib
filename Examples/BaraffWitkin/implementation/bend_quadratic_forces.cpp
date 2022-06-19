@@ -101,71 +101,71 @@ void Bend<NT>::init(
 	D.resize(n * 3, n * 3);
 	Q.resize(E4.rows());
 
-    F_local.resize(E4.rows() * 4);
-    
+	F_local.resize(E4.rows() * 4);
+
 	this->precompute_rest_shape(X);
 }
 
 template<class NT>
-void Bend<NT>::precompute_rest_shape(const Eigen::MatrixXd& X){
+void Bend<NT>::precompute_rest_shape(const Eigen::MatrixXd& X) {
 
-    for (int e = 0; e < E4.rows(); e++) {
-        vector< Eigen::Vector3d > x(4);
-        for (int i = 0; i < 4; i++)
-            x[i] = X.row(E4(e, i));
+	for (int e = 0; e < E4.rows(); e++) {
+		vector< Eigen::Vector3d > x(4);
+		for (int i = 0; i < 4; i++)
+			x[i] = X.row(E4(e, i));
 
-        ComputeLocalStiffness(x, Q[e]);
+		ComputeLocalStiffness(x, Q[e]);
 
-        // --- second order derivatives ---
-        // stiffness and damping matrix
-        Eigen::Matrix4d K_local = k_bend * Q[e];
-        Eigen::Matrix4d D_local = k_damping * Q[e];
+		// --- second order derivatives ---
+		// stiffness and damping matrix
+		Eigen::Matrix4d K_local = k_bend * Q[e];
+		Eigen::Matrix4d D_local = k_damping * Q[e];
 
-        int offset = e * 48;
-        
-        // add stiffness matrix
-        for (int dim = 0; dim < 3; dim++) {
-            for (int v1 = 0; v1 < 4; v1++) {
-                for (int v2 = 0; v2 < v1; v2++) {
-                    
-                    triK.emplace_back(E4(e, v1) + dim * n, E4(e, v2) + dim * n, K_local(v1, v2));
-                    triK.emplace_back(E4(e, v2) + dim * n, E4(e, v1) + dim * n, K_local(v2, v1));
-                    
-                    triD.emplace_back(E4(e, v1) + dim * n, E4(e, v2) + dim * n, D_local(v1, v2));
-                    triD.emplace_back(E4(e, v2) + dim * n, E4(e, v1) + dim * n, D_local(v2, v1));
-                    
-                    offset += 2;
-                }
-                
-                
-                triK.emplace_back(E4(e, v1) + dim * n, E4(e, v1) + dim * n,  K_local(v1, v1));
-                triD.emplace_back(E4(e, v1) + dim * n, E4(e, v1) + dim * n,  D_local(v1, v1));
-                
-                offset++;
-            }
-        }
-    }
-    
-    
-    K.resize(3 * n, 3 * n);
-    D.resize(3 * n, 3 * n);
-    
-    K.setFromTriplets(triK.begin(), triK.end());
-    D.setFromTriplets(triD.begin(), triD.end());
+		int offset = e * 48;
+
+		// add stiffness matrix
+		for (int dim = 0; dim < 3; dim++) {
+			for (int v1 = 0; v1 < 4; v1++) {
+				for (int v2 = 0; v2 < v1; v2++) {
+
+					triK.emplace_back(E4(e, v1) + dim * n, E4(e, v2) + dim * n, K_local(v1, v2));
+					triK.emplace_back(E4(e, v2) + dim * n, E4(e, v1) + dim * n, K_local(v2, v1));
+
+					triD.emplace_back(E4(e, v1) + dim * n, E4(e, v2) + dim * n, D_local(v1, v2));
+					triD.emplace_back(E4(e, v2) + dim * n, E4(e, v1) + dim * n, D_local(v2, v1));
+
+					offset += 2;
+				}
+
+
+				triK.emplace_back(E4(e, v1) + dim * n, E4(e, v1) + dim * n, K_local(v1, v1));
+				triD.emplace_back(E4(e, v1) + dim * n, E4(e, v1) + dim * n, D_local(v1, v1));
+
+				offset++;
+			}
+		}
+	}
+
+
+	K.resize(3 * n, 3 * n);
+	D.resize(3 * n, 3 * n);
+
+	K.setFromTriplets(triK.begin(), triK.end());
+	D.setFromTriplets(triD.begin(), triD.end());
 }
 
 template<class NT>
 const Eigen::SparseMatrix<double>& Bend<NT>::getK() const
 {
-    return K;
+	return K;
 }
 
 template<class NT>
 const Eigen::SparseMatrix<double>& Bend<NT>::getD() const
 {
-    return D;
+	return D;
 }
-  
+
 template<class NT>
 void Bend<NT>::compute_forces(
 	const Eigen::Matrix<NT, -1, -1>& X,			// in: vertex positions
@@ -173,32 +173,32 @@ void Bend<NT>::compute_forces(
 	Eigen::Matrix<NT, -1, 1>& F)				// out: forces
 {
 	for (int e = 0; e < E4.rows(); e++) {
-		
-        // get necessary positions and velocities for this edge
+
+		// get necessary positions and velocities for this edge
 		vector<Eigen::Matrix<NT, 4, 1>> x(3);				// position: 3 vectors: x_coords, y_coords and z_coords - each with 4 entries for 4 vertices
 		vector<Eigen::Matrix<NT, 4, 1>> v(3);				// velocity
-		
-        for (int i = 0; i < 4; i++) {
+
+		for (int i = 0; i < 4; i++) {
 			int vertex = E4(e, i);
-            for (int j = 0; j < 3; j++) {
+			for (int j = 0; j < 3; j++) {
 				x[j](i) = X(vertex, j);
 				v[j](i) = V(vertex + j * n);
 			}
 		}
 
-        const auto qe = Q[e].template cast<NT>();
-        
-        F_local[3 * e + 0] = qe * (k_bend * x[0] + k_damping * v[0]);
-        F_local[3 * e + 1] = qe * (k_bend * x[1] + k_damping * v[1]);
-        F_local[3 * e + 2] = qe * (k_bend * x[2] + k_damping * v[2]);
+		const auto qe = Q[e].template cast<NT>();
+
+		F_local[3 * e + 0] = qe * (k_bend * x[0] + k_damping * v[0]);
+		F_local[3 * e + 1] = qe * (k_bend * x[1] + k_damping * v[1]);
+		F_local[3 * e + 2] = qe * (k_bend * x[2] + k_damping * v[2]);
 	}
-            
-    for (int e = 0; e < E4.rows(); e++) {
-        for (int i = 0; i < 4; i++) {            // force on vertex i
-            const int vertex = E4(e, i);
-            for (int j = 0; j < 3; j++) {        // put each force dimension into the right place of the total F
-                F(vertex + j * n) += F_local[3 * e + j](i);
-            }
-        }
-    }
+
+	for (int e = 0; e < E4.rows(); e++) {
+		for (int i = 0; i < 4; i++) {            // force on vertex i
+			const int vertex = E4(e, i);
+			for (int j = 0; j < 3; j++) {        // put each force dimension into the right place of the total F
+				F(vertex + j * n) += F_local[3 * e + j](i);
+			}
+		}
+	}
 }

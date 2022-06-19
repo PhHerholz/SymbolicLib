@@ -5,7 +5,7 @@
 #include <Eigen/Sparse>
 
 template<class NT>
-class StretchShear{
+class StretchShear {
 private:
     double k_stretch;
     double k_stretch_damping;
@@ -29,27 +29,27 @@ public:
     const Eigen::SparseMatrix<NT>& getK() const;
     const Eigen::SparseMatrix<NT>& getD() const;
     const Eigen::Matrix<NT, -1, 1>& getStretch() const;
-      
+
     void init(double k_stretch, double k_stretch_damping, double k_shear, double k_shear_damping, Eigen::MatrixXd& V, Eigen::MatrixXi& F);
-    
+
     void precompute_rest_shape(Eigen::MatrixXd& V);
 
     std::vector<NT> energy(const Eigen::Matrix<NT, -1, -1>& X);
-    
+
     void compute_grad_hessian(const Eigen::Matrix<NT, -1, -1>& X,
-                              Eigen::Matrix<NT, -1, 1> & grad,
-                              std::vector<Eigen::Triplet<NT>>& H,
-                              std::vector<NT>* rawValues = nullptr,
-                              bool computeGrad = true);
-    
+        Eigen::Matrix<NT, -1, 1>& grad,
+        std::vector<Eigen::Triplet<NT>>& H,
+        std::vector<NT>* rawValues = nullptr,
+        bool computeGrad = true);
+
     void compute_forces(
         const Eigen::Matrix<NT, -1, -1>& X,       // in: vertex positions
         const Eigen::Matrix<NT, -1, 1>& V,        // in: velocitiy at vertex positions
         Eigen::Matrix<NT, -1, 1>& F);             // out: force vector
 
 
-    void hessians (const Eigen::Matrix<NT, -1, -1>& X,        // in: vertex positions
-        Eigen::Matrix<NT, -1, -1> & hess);
+    void hessians(const Eigen::Matrix<NT, -1, -1>& X,        // in: vertex positions
+        Eigen::Matrix<NT, -1, -1>& hess);
 };
 
 #include "./implementation/stretch_shear_forces_impl.hpp"
