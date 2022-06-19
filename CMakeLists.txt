@@ -42,7 +42,7 @@ set(CMAKE_CACHEFILE_DIR ${CMAKE_BINARY_DIR}/build)
 add_subdirectory(src)
 
 if(SYMBOLIC_TOPLEVEL_PROJECT)
-  add_subdirectory(Examples)
+  add_subdirectory(examples)
 endif()
 
 
