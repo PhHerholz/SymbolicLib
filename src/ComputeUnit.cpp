@@ -119,7 +119,7 @@ void ComputeUnit<RealT>::compile(const string& code)
     if(device.cudaDevice)  {
         cmd = "nvcc -I../../data/ -Xcompiler '-fPIC -shared' -O3 -o cpuCode.so cudaCode.cu";
     } else if(device.hipDevice) {
-        cmd = "opt/rocm/bin/hipcc -Xcompiler '-fPIC -shared' -O3 -ohipCode.so hipCode.cpp";
+        cmd = "hipcc -fPIC -shared -O3 -ohipCode.so hipCode.cpp";
     } else {
         cmd = "clang++ -shared -fPIC -ffast-math -fno-trapping-math -fno-math-errno -fno-signed-zeros -O3 -std=c++17 -msse4.2 -mavx2 -mfma cpuCode.cpp -ocpuCode.so";
 
@@ -128,8 +128,8 @@ void ComputeUnit<RealT>::compile(const string& code)
 #ifdef __APPLE__
             cmd += format(" -DNUMTHREADS=% -Xclang -fopenmp -L/usr/local/opt/libomp/lib -Wl,-rpath,/opt/intel/lib -lomp", device.numThreads);
 #else
-          //  cmd += format(" -DNUMTHREADS=% -fopenmp -I/opt/rocm/llvm/include -L/opt/rocm/llvm/lib -Wl,-rpath,/opt/rocm/llvm/lib -liomp5", device.numThreads);
-            cmd += format(" -DNUMTHREADS=% -fopenmp", device.numThreads);
+            cmd += format(" -DNUMTHREADS=% -fopenmp -I/opt/rocm/llvm/include -L/opt/rocm/llvm/lib -Wl,-rpath,/opt/rocm/llvm/lib -liomp5", device.numThreads);
+          //  cmd += format(" -DNUMTHREADS=% -fopenmp", device.numThreads);
 #endif
         }
     }
@@ -307,7 +307,7 @@ void ComputeUnit<RealT>::init()
     saveData("outIndexData", outputIdsFlat);
 
     stringstream file;
-    file << (device.cudaDevice ? cudaHeader<RealT>() : cpuHeader<RealT>());
+    file << (device.cudaDevice ? cudaHeader<RealT>() : (device.hipDevice ? hipHeader<RealT>() : cpuHeader<RealT>()));
 
     int accSize = 0;
     file << format("size_t numThreads = %;\n", device.numThreads);

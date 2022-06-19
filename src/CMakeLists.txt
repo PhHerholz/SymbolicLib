@@ -18,6 +18,15 @@ if(DEFINED CMAKE_CUDA_STANDARD)
 else()
     set(CMAKE_FOUND_CUDA "false")
 endif()
+
+find_package(HIP)
+
+if(HIP_FOUND)
+    set(CMAKE_FOUND_HIP "true")
+else()
+    set(CMAKE_FOUND_HIP "false")
+endif()
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ComputeUnitAvailability.h.in ${CMAKE_CURRENT_SOURCE_DIR}/ComputeUnitAvailability.h)
 
 ## set various flags for different systems

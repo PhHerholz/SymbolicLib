@@ -59,8 +59,15 @@ int main(int argc, char* argv[]) {
 
     cout << "difference: " << (B - B2).norm() << endl;
 
+    if (HIP_FOUND) {
+        // Generating a program for hip devices just requires to set device parameters
+        ComputeUnit<double> unitHIP(Device(UseHIP(), ThreadsPerBlock(128)), AS, BS);
+        unitHIP.compile().execute(A).getResults(B2);
+
+        cout << "difference hip: " << (B - B2).norm() << endl;
+    }
+
     if (CUDA_FOUND) {
-        // Generating a program for cuda devices just requires to set device parameters
         ComputeUnit<double> unitCuda(Device(UseCuda(), ThreadsPerBlock(128)), AS, BS);
         unitCuda.compile().execute(A).getResults(B2);
 
