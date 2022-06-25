@@ -17,6 +17,7 @@ struct NamedType {
     explicit NamedType(const T& x_) : x(x_) {};
 };
 
+// this is a bit fancy way to handle different types of inputs
 using ThreadsPerBlock = NamedType<int, struct ThreadsPerBlockTag>;
 using NumThreads = NamedType<int, struct NumThreadsTag>;
 using VecWidth = NamedType<int, struct VecWidthTag>;
@@ -29,6 +30,7 @@ struct UseSinglePrecision {};
 class Device {
 
 public:
+    // used to store system specs, I think this can be automated, but if the purpose is to generate a code that can also be ran on other platforms, then look no further
     unsigned int vectorWidth = 1;
     unsigned int numThreads = 1;
     unsigned int decompositionThreshold = 6;
@@ -37,7 +39,8 @@ public:
     bool hipDevice = false;
 
 private:
-
+    // here we set the system specs
+    // look at those types defined before to know what each set function does
     void set(const DecompositionThreshold& nt) {
         decompositionThreshold = nt.x;
     }
@@ -59,17 +62,19 @@ private:
     }
 
     void set(const UseHIP&) {
-         hipDevice = true;
-         cudaDevice = false;
-         vectorWidth = 0;
-     }
-    
+        hipDevice = true;
+        cudaDevice = false;
+        vectorWidth = 0;
+    }
+
     void set(const UseCuda&) {
         cudaDevice = true;
         hipDevice = false;
         vectorWidth = 0;
     }
 
+    // Since we recursively read each argument, at the end we will reach to this set function
+    // TX: Maybe we should add an exit(1) here?
     template<class T>
     void set(const T&) {
         std::cout << "device parameter not understood" << std::endl;
@@ -77,6 +82,7 @@ private:
 
     void init() {}
 
+    // the ... Args are used to handle unknown number of inputs
     template<class T, class... Args>
     void init(const T& t, const Args&... args) {
         set(t);
@@ -85,6 +91,9 @@ private:
 
 public:
 
+    // a divice can have multiple arguments
+    // the ... Args are used to handle unknown number of inputs
+    // those inputs will be set recursively in the init function
     template<class... Args>
     Device(const Args&... args) {
         init(args...);
@@ -96,6 +105,7 @@ public:
 template<class RealT>
 class ComputeUnit {
 
+    // pointers that will be used to extract the functions in the compiled code
     void* libHandle = nullptr;
 
     void (*initFunc)(const unsigned int* indexData, const unsigned int* outIndexData, const RealT* constData) = nullptr;
@@ -140,11 +150,19 @@ class ComputeUnit {
 
     void addExpressions(const Symbolic* expr, const int len, int& id);
 
+
+    // since we recursively add expressions, when we reach to the point that there is no more matrix to parse
+    // then we hit the end of recursion, don't do anything
     template<class ...TArgs>
     void setExpressions(const int id) {}
 
+    // recursively add expression
     template<class T, class ...TArgs>
     void setExpressions(int id, const T& A, const TArgs& ... args) {
+        // contPtr returns the data pointer of A
+        // contSize returns the non-zero count of A
+        // Refer to ContainerSupport.h
+        // TX: maybe change to count?
         addExpressions(contPtr(A), contSize(A), id);
         setExpressions(id, args...);
     }
@@ -153,7 +171,7 @@ class ComputeUnit {
 
     template<class T, class ...TArg>
     void setArgs(int id, const T& arg, const TArg& ... expressions) {
-        if(setArgFunc) setArgFunc(contPtr(arg), id);
+        if (setArgFunc) setArgFunc(contPtr(arg), id);
         setArgs(id + 1, expressions...);
     }
 
@@ -161,7 +179,7 @@ class ComputeUnit {
 
     template<class T, class ...TArg>
     void getRes(int id, T& arg, TArg& ... expressions) {
-        if(getResFunc) getResFunc(contPtr(arg), id);
+        if (getResFunc) getResFunc(contPtr(arg), id);
         getRes(id + 1, expressions...);
     }
 
@@ -187,7 +205,7 @@ public:
     template<class ...TArg>
     ComputeUnit& execute(const TArg& ... expressions) {
         setArgs(0, expressions...);
-        if(runFunc) runFunc();
+        if (runFunc) runFunc();
         return *this;
     }
 
