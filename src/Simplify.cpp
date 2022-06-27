@@ -77,6 +77,15 @@ Symbolic makeSymbolic(const unsigned char op, vector<Symbolic> operands) {
 	else return ret;
 }
 
+// this literally flattens all children with +
+// for example
+//                  +
+//            *            +
+//        x1     x2     x3   x4
+// now becomes
+//                  +
+//            *      x3       x4
+//        x1     x2 
 Symbolic flattenAdditions(const Symbolic& expr) {
 
 	if (expr.op() != ADD) return expr;
@@ -102,6 +111,8 @@ Symbolic flattenAdditions(const Symbolic& expr) {
 	return ret;
 }
 
+// same idea with flattenAddition
+// literally flattens all of the multiplications
 Symbolic flattenMultiplications(const Symbolic& expr) {
 
 	if (expr.op() != MUL && expr.op() != MULC) return expr;
@@ -127,7 +138,9 @@ Symbolic flattenMultiplications(const Symbolic& expr) {
 }
 
 Symbolic makePower(const Symbolic& x, const double d) {
+	// simplify CONST
 	if (x.op() == CONST) return Symbolic(pow(x.constant(), d));
+	// simplify the exponent
 	else if (x.op() == POW && x[1].op() == CONST) return Symbolic(POW, x[0], Symbolic(d * x[1].constant()));
 	else return Symbolic(POW, x, Symbolic(d));
 }
@@ -137,7 +150,10 @@ bool isMul(const Symbolic& x) {
 }
 
 Symbolic flattenDivAndMul(const Symbolic& expr) {
-
+	// basically, this function flattens division and multiplication
+	// with the extra step of converting anything power based
+	// to actually power based
+	// e.g. sqrt is now pow(0.5), division is now pow(-1)
 	vector<Symbolic> childs;
 
 	switch (expr.op()) {
@@ -153,6 +169,7 @@ Symbolic flattenDivAndMul(const Symbolic& expr) {
 			break;
 
 		case SQRT: {
+			// make SQRT to pow function
 			auto rad = flattenDivAndMul(expr[0]);
 			if (isMul(rad)) for (auto& c : rad) childs.push_back(makePower(c, 0.5));
 			else childs.push_back(makePower(rad, 0.5));
@@ -179,13 +196,16 @@ Symbolic flattenDivAndMul(const Symbolic& expr) {
 }
 
 Symbolic optimizeProducts(const Symbolic& x) {
+	// this function basically merges numerator and denominator
 
 	auto xf = flattenDivAndMul(x);
 	if (!isMul(xf)) return x;
 
 	map<Symbolic, double, AlgebraicHashFunctor> factors;
-
+	// going over the children
 	for (auto& c : xf) {
+		// TX: What if the pow is not up to a constant?
+		// I mean, it rarely happens, but never impossible
 		if (c.op() == POW) factors[c[0]] += c[1].constant();
 		else factors[c] += 1.;
 	}
@@ -195,9 +215,13 @@ Symbolic optimizeProducts(const Symbolic& x) {
 
 	double f = 1.;
 
+	// TX: ok we will need to consider the chances
+	// that maybe, a cube root is used or something
+	// or double square root applied
 	for (auto& c : factors) {
 
 		if (c.first.op() == CONST) {
+			// compute the constant already
 			f *= pow(c.first.constant(), c.second);
 		} else if (c.second < 0) {
 			if (floor(c.second) == c.second) {
@@ -239,6 +263,8 @@ Symbolic optimizeProducts(const Symbolic& x) {
 }
 
 Symbolic pullConstant(const Symbolic& x_) {
+	// basically multiplies all the constants
+	// in a flattened multiplication tree
 	auto x = flattenMultiplications(x_);
 	if (x.op() == MULC) return x;
 	if (x.op() != MUL) return Symbolic(MULC, Symbolic(1.), x);
@@ -255,7 +281,10 @@ Symbolic pullConstant(const Symbolic& x_) {
 }
 
 Symbolic optimizeSum(const Symbolic& x0) {
-
+	// for all the children of a flattened tree
+	// we want to take out those that is of multiplication type
+	// and have the same symbolic in a (symbolic * constant) expression
+	// and add the constants together
 	auto x = flattenAdditions(x0);
 	if (x.op() != ADD) return x;
 
@@ -327,6 +356,7 @@ Symbolic pullFactor(Symbolic x) {
 			auto fc = flattenMultiplications(c);
 
 			if (fc.op() == MUL) {// 'c' could be a multiplication with a single operand
+				// TX: why the recomputation here?
 				for (auto& cc : flattenMultiplications(c))
 					factors.push_back(cc);
 			} else factors.push_back(fc);
@@ -337,8 +367,11 @@ Symbolic pullFactor(Symbolic x) {
 	}
 
 	// find factor(s) that are shared by as many summands as possible
+	// now summands will contain a list of list of symbolics
+	// those symbolics are the factors in a flattened multiplication
 	map<Symbolic, set<int>, AlgebraicHashFunctor> factors;
 
+	// for each symbolic, we record where it was used
 	for (int i = 0; i < summands.size(); ++i) {
 		for (auto& y : summands[i]) {
 			factors[y].insert(i);
@@ -358,6 +391,8 @@ Symbolic pullFactor(Symbolic x) {
 	vector<Symbolic> factored, rest;
 
 	for (int i = 0; i < summands.size(); ++i) {
+		// pull out the factor
+		// from a list of factors
 		if (it != maxIt->second.end() && i == *it) {
 
 			auto its = find(summands[i].begin(), summands[i].end(), maxIt->first);
@@ -375,11 +410,15 @@ Symbolic pullFactor(Symbolic x) {
 		}
 	}
 
+	// actually factoring it
 	rest.push_back(maxIt->first * pullFactor(makeSymbolic(ADD, factored)));
+	// recursively do it until there is no factors left
 	return pullFactor(flattenAdditions(makeSymbolic(ADD, rest)));
 }
 
 Symbolic findNegative(const Symbolic& expr) {
+	// this function removes the constant -1 in expressions
+	// that has + or *
 	if (expr.op() == MULC && expr[0].constant() == -1) return Symbolic(NEG, expr[1]);
 
 	if (expr.op() == MUL) {
@@ -412,7 +451,9 @@ Symbolic findNegative(const Symbolic& expr) {
 }
 
 Symbolic simplifyExpression(const Symbolic& expr) {
-
+	// if it's like an addition or something
+	// that we can directly compute
+	// then simplify it by merging it to a new constant
 	if (isSmallConstant(expr.ahash())) return (double)expr.ahash();
 	if (expr.numChilds() == 0) return expr;
 
@@ -436,6 +477,8 @@ Symbolic simplify(const Symbolic& expr) {
 }
 
 Symbolic removeConstantExpressions(const Symbolic& x) {
+	// check Traverse.hpp for implementation
+	// TX: Philipp, this function isn't doing anything
 	return traverseGenerate<Symbolic>(x,
 		[](const Symbolic& x) {
 			return x;
