@@ -202,10 +202,6 @@ public:
         tie(x, structureHash) = stack.front();
 
         if (x.op() != BLOCK && x.op() != ASSIGN && status != MERGED) x = Symbolic(ASSIGN, Symbolic(id, variableGroupId), x);
-        // so here you need to remember something
-        // if it is a top level expression
-        // the id is likely set already to a negative number
-        // if it is generated here, then the id is positive
 
         return x;
     }
