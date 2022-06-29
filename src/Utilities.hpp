@@ -77,7 +77,8 @@ topologicalOrder(const std::vector<IdCont>& graph) {
         std::cout << "!!!!!!!!!!topological ordering failed!!!!!!!!!!!!!!" << std::endl;
         return {};
     }
-
+    // return topological order
+    // the code is pretty clear
     return L;
 }
 
@@ -104,6 +105,9 @@ int appendTransposed(const std::vector<std::vector<T>>& src, std::vector<T>& dst
 
     if (src.empty()) return packLength;
 
+    // every sub vector in src should have same length
+    // since they are different input variables
+    // of same number of trees
     const int segLength = src.front().size();
     for (auto& x : src) assert(x.size() == segLength);
 
@@ -111,14 +115,14 @@ int appendTransposed(const std::vector<std::vector<T>>& src, std::vector<T>& dst
     const size_t n = segLength * src.size();
     dst.resize(n0 + n);
     auto ptr = dst.begin() + n0;
-
     if (packLength == 0 || segLength % packLength) {
         for (const auto& s : src) ptr = std::copy(s.begin(), s.end(), ptr);
         return 0;
     }
-
     const int packs = segLength / packLength;
 
+    // this is to ensure everything in memory fits into
+    // an simd vector
     for (int i = 0; i < packs; ++i) {
         for (auto& s : src) {
             ptr = std::copy_n(s.begin() + packLength * i, packLength, ptr);
