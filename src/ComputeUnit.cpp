@@ -118,9 +118,9 @@ void ComputeUnit<RealT>::compile(const string& code)
     string cmd;
 
     if (device.cudaDevice) {
-        cmd = "nvcc -I../../data/ -Xcompiler '-fPIC -shared' -O3 -o cpuCode.so cudaCode.cu";
+        cmd = "nvcc -I../../data/ -Xcompiler '-fPIC -shared' -O3 -o cudaCode.so cudaCode.cu";
     } else if (device.hipDevice) {
-        cmd = "hipcc -fPIC -shared -O3 -ohipCode.so hipCode.cpp";
+        cmd = "hipcc -fPIC -shared -O3 -o hipCode.so hipCode.cpp";
     } else {
         cmd = "clang++ -shared -fPIC -ffast-math -fno-trapping-math -fno-math-errno -fno-signed-zeros -O3 -std=c++17 -msse4.2 -mavx2 -mfma cpuCode.cpp -ocpuCode.so";
 
