@@ -3,6 +3,16 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include "Symbolic.hpp"
+// #include "SymbolicMatrix.hpp"
+
+// // for symbolic matrices
+// auto countPtr(const Sym::SymbolicMatrix& m) {
+//     return m.getSymbolicRepresentation();
+// }
+
+// inline size_t countSize(const Sym::SymbolicMatrix& m){
+//     return 1;
+// }
 
 template<class Cont>
 auto contPtr(Cont& c) {
@@ -50,6 +60,7 @@ auto contPtr(const Eigen::SparseMatrix<T>& c) {
     return c.valuePtr();
 }
 
+
 template<class T>
 size_t contSize(const Eigen::SparseMatrix<T>& c) {
     return c.nonZeros();
@@ -62,7 +73,7 @@ template<class T>
 Eigen::SparseMatrix<Symbolic> makeSymbolic(Eigen::SparseMatrix<T>& A, const int objId) {
     Eigen::SparseMatrix<Symbolic> B;
     B = A.template cast<Symbolic>();
-    for(int i = 0; i < B.nonZeros(); ++i) B.valuePtr()[i] = Symbolic(i, objId);
+    for (int i = 0; i < B.nonZeros(); ++i) B.valuePtr()[i] = Symbolic(i, objId);
     return B;
 }
 
@@ -70,7 +81,7 @@ template<class T, int N, int M>
 Eigen::Matrix<Symbolic, N, M> makeSymbolic(Eigen::Matrix<T, N, M>& A, const int objId) {
     Eigen::Matrix<Symbolic, N, M> B;
     B.resizeLike(A);
-    for(int i = 0; i < B.size(); ++i) B.data()[i] = Symbolic(i, objId);
+    for (int i = 0; i < B.size(); ++i) B.data()[i] = Symbolic(i, objId);
     return B;
 }
 
@@ -79,12 +90,12 @@ void toSparseMatrix(Eigen::SparseMatrix<T>& A, const std::vector<std::tuple<int,
     using namespace std;
     vector<Eigen::Triplet<T>> triplets;
     triplets.reserve((makeSymmetric ? 2 : 1) * tuples.size());
-    for(const auto& t : tuples) triplets.emplace_back(get<0>(t), get<1>(t), get<2>(t));
-    
-    if(makeSymmetric)
-        for(const auto& t : tuples)
-            if(get<1>(t) != get<0>(t)) triplets.emplace_back(get<1>(t), get<0>(t), get<2>(t));
-    
+    for (const auto& t : tuples) triplets.emplace_back(get<0>(t), get<1>(t), get<2>(t));
+
+    if (makeSymmetric)
+        for (const auto& t : tuples)
+            if (get<1>(t) != get<0>(t)) triplets.emplace_back(get<1>(t), get<0>(t), get<2>(t));
+
     A.resize(n, n);
     A.setFromTriplets(triplets.begin(), triplets.end());
 }

@@ -10,31 +10,35 @@
 #include "../../src/ComputeUnit.hpp"
 #include "../../src/ComputeUnitAvailability.h"
 #include "../dataPath.hpp"
+#include "../../src/SymbolicMatrix.hpp"
 
 int main(int argc, char* argv[]) {
     using namespace std;
     using namespace Sym;
 
-    // A symbolic expression is represented by instances of the class 'Sym::Symbolic'.
-    // We start by creating two variables. Variables have two parameters, a variable id and a variable group.
-    Symbolic a(0, 0);
-    Symbolic b(1, 0);
+    // // A symbolic expression is represented by instances of the class 'Sym::Symbolic'.
+    // // We start by creating two variables. Variables have two parameters, a variable id and a variable group.
+    // Symbolic a(0, 0);
+    // Symbolic b(1, 0);
 
-    // Symbolic instances can be combined using mathematical operations
-    Symbolic c = a + b * sqrt(a * b);
+    // // Symbolic instances can be combined using mathematical operations
+    // Symbolic c = a + b * sqrt(a * b);
 
-    // Evaluating the requires concrete values for a and b. The second argument to evaluate defines values for variable group 0.
-    cout << evaluate(c, vector<double>{1., 2.}) << endl; // 3.82843
+    // // Evaluating the requires concrete values for a and b. The second argument to evaluate defines values for variable group 0.
+    // cout << evaluate(c, vector<double>{1., 2.}) << endl; // 3.82843
 
-    // The expression can be differentiated with respect to a set of variables.
-    auto dc = differentiate(c, vector<Symbolic>{a, b});
+    // // The expression can be differentiated with respect to a set of variables.
+    // auto dc = differentiate(c, vector<Symbolic>{a, b});
 
-    cout << evaluate(dc[0], vector<double>{1., 2.}) << endl; // 2.41421
-    cout << evaluate(dc[1], vector<double>{1., 2.}) << endl; // 2.12132
+    // cout << evaluate(dc[0], vector<double>{1., 2.}) << endl; // 2.41421
+    // cout << evaluate(dc[1], vector<double>{1., 2.}) << endl; // 2.12132
 
     // Let us consider a more complex example: multiplying a matrix with itself.
     Eigen::SparseMatrix<double> A;
     Eigen::loadMarket(A, filePath() + "/sphere.mtx");
+    SymbolicMatrix as = SymbolicMatrix(A, 0);
+    SymbolicMatrix bs = as * as.transpose() * as * as.transpose();
+    ComputeUnit<double> unit1(Device(VecWidth(4), NumThreads(8)), as, bs);
 
     // The function 'makeSymbolic' builds a copy of the sparse matrix 'A' and replaces each value with a variable of group 0.
     Eigen::SparseMatrix<Symbolic> AS = makeSymbolic(A, 0);

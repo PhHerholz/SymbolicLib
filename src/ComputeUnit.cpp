@@ -228,9 +228,18 @@ void ComputeUnit<RealT>::addExpressions(const Symbolic* expr, const int len, int
 }
 
 template <class RealT>
-void ComputeUnit<RealT>::init()
-{
+void ComputeUnit<RealT>::addExpressions(const SymbolicMatrix* expr, const int len, int& id) {
+    if (expr->isInput()) {
+        // I haven't thought of what I should do here
+    } else {
+        outputExpressionsMatrix.push_back(Symbolic(ASSIGN, Symbolic(0, -10 - id), expr->getSymbolicRepresentation()));
+    }
+    ++id;
+    cout << "Adding expressions for symbolic matrix" << endl;
+}
 
+template <class RealT>
+void ComputeUnit<RealT>::initSymbolic() {
     // decompose set of expressions
     // At the beginning of this function
     // every Symbolic in outputExpressions have the op as ASSIGN(18)
@@ -448,6 +457,22 @@ void ComputeUnit<RealT>::init()
 
     file << (device.cudaDevice ? cudaFooter : (device.hipDevice ? hipFooter : cpuFooter));
     code = file.str();
+}
+
+template <class RealT>
+void ComputeUnit<RealT>::initMatrix(){
+
+}
+
+template <class RealT>
+void ComputeUnit<RealT>::init()
+{
+    if (outputExpressions.size() == 0) {
+        initMatrix();
+    } else {
+        initSymbolic();
+    }
+
 }
 
 template <class RealT>

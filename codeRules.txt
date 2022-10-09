@@ -1,0 +1,4 @@
+Let's follow some rules to format our code better:
+1. naming rules should follow camel case: myVariable
+2. anything related to symbolic matrix, if the symbolic counterpart exists, then add Matrix to the end of variable
+3. formatting style is in .editorconfig, we will use 4 spaces for indentation

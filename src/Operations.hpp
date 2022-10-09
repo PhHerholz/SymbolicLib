@@ -36,6 +36,7 @@ constexpr OpType RECIPROCAL = 26;
 constexpr OpType FIXED = 27;
 constexpr OpType FUNCTIONHANDLE = 28;
 constexpr OpType CALL = 29;
+constexpr OpType TRANSPOSE = 30; // this is for symbolic representation of matrix
 
 
 typedef long long hash_t;

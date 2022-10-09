@@ -8,13 +8,14 @@
 #include "Timer.hpp"
 #include <unordered_map>
 #include <iostream>
+#include "SymbolicMatrix.hpp"
 
 namespace Sym {
 
 template<class T, class Tag>
 struct NamedType {
     T x;
-    explicit NamedType(const T& x_) : x(x_) {};
+    explicit NamedType(const T& x_): x(x_) {};
 };
 
 // this is a bit fancy way to handle different types of inputs
@@ -119,6 +120,7 @@ class ComputeUnit {
 
     // all expressions handed over by the user
     std::vector<Symbolic> outputExpressions;
+    std::vector<Symbolic> outputExpressionsMatrix; // this is specifically for matrix operations
 
     // offsets for input data
     size_t inputDataSize = 0;
@@ -149,7 +151,7 @@ class ComputeUnit {
     std::string code;
 
     void addExpressions(const Symbolic* expr, const int len, int& id);
-
+    void addExpressions(const SymbolicMatrix* exprMatrix, const int len, int& id);
 
     // since we recursively add expressions, when we reach to the point that there is no more matrix to parse
     // then we hit the end of recursion, don't do anything
@@ -186,6 +188,8 @@ class ComputeUnit {
     std::vector<std::vector<int>> group(const std::vector<ExpressionBlock>& x);
 
     void init();
+    void initSymbolic(); // this is when we override each symbolic type
+    void initMatrix(); // this is when we init with symbolicMatrix type
 
     void compile(const std::string& code);
 
@@ -197,7 +201,7 @@ public:
     void close();
 
     template<class ...TArg>
-    ComputeUnit(Device device_, const TArg& ... expressions) : device(device_) {
+    ComputeUnit(Device device_, const TArg& ... expressions): device(device_) {
         setExpressions(0, expressions...);
         init();
     }
