@@ -1,10 +1,10 @@
 #include "Decomposition.hpp"
-#include "Traverse.hpp"
+#include "../support/Traverse.hpp"
 #include "CodeGenerator.hpp"
-#include "Hashing.hpp"
-#include "Utilities.hpp"
+#include "../support/Hashing.hpp"
+#include "../support/Utilities.hpp"
 #include "ComputeKernel.hpp"
-#include "Timer.hpp"
+#include "../support/Timer.hpp"
 #include <map>
 #include <set>
 #include <memory>

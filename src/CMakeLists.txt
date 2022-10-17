@@ -27,7 +27,7 @@ else()
     set(CMAKE_FOUND_HIP "false")
 endif()
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ComputeUnitAvailability.h.in ${CMAKE_CURRENT_SOURCE_DIR}/ComputeUnitAvailability.h)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/support/ComputeUnitAvailability.h.in ${CMAKE_CURRENT_SOURCE_DIR}/support/ComputeUnitAvailability.h)
 
 ## set various flags for different systems
 if (MSVC)
@@ -41,7 +41,7 @@ elseif (APPLE)
     set(OpenMP_omp_LIBRARY /usr/local/opt/libomp/lib/libomp.dylib)
 endif()
 
-file(GLOB sources ${SOURCE_DIR}/*.cpp ${SOURCE_DIR}/*.hpp ${SOURCE_DIR}/*.h)
+file(GLOB sources ${SOURCE_DIR}/support/*.cpp ${SOURCE_DIR}/support/*.hpp ${SOURCE_DIR}/support/*.h ${SOURCE_DIR}/scalar/*.cpp ${SOURCE_DIR}/scalar/*.hpp ${SOURCE_DIR}/scalar/*.h ${SOURCE_DIR}/matrix/*.cpp ${SOURCE_DIR}/matrix/*.hpp ${SOURCE_DIR}/matrix/*.h)
 include_directories(${INCLUDE_DIRS} ${SOURCE_DIR})
 
 add_library(Symbolic ${sources})

@@ -2,8 +2,8 @@
 #include <vector>
 #include <string>
 #include <regex>
-#include "Traverse.hpp"
-#include "StringTools.hpp"
+#include "../support/Traverse.hpp"
+#include "../support/StringTools.hpp"
 
 using namespace std;
 

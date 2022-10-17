@@ -1,5 +1,5 @@
 #include "SymbolicDifferentiation.hpp"
-#include "Hashing.hpp"
+#include "../support/Hashing.hpp"
 #include "Operations.hpp"
 #include <unordered_map>
 #include <map>

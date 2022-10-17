@@ -37,7 +37,7 @@ public:
 
         void init();
 
-        Data() : op(0), numChilds(0), childs(nullptr) {
+        Data(): op(0), numChilds(0), childs(nullptr) {
             init();
         }
 
@@ -49,7 +49,7 @@ public:
         }
 
         template<class NumberT>
-        Data(const NumberT d) : op(CONST), numChilds(0), constant(d) {
+        Data(const NumberT d): op(CONST), numChilds(0), constant(d) {
             init();
         }
 
@@ -68,6 +68,8 @@ public:
         void computeAlgebraicHash();
 
         void computeComplexity();
+
+        const std::string toString() const;
 
     public:
         static long long instanceCounter;
@@ -162,6 +164,10 @@ public:
 
     inline long long id() const {
         return (long long)data;
+    }
+
+    const std::string toString() const{
+        return data->toString();
     }
 
 };

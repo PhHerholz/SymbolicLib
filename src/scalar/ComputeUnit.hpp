@@ -1,14 +1,14 @@
 #pragma once
 
-#include "ContainerSupport.h"
+#include "../support/ContainerSupport.h"
 #include "Symbolic.hpp"
 #include "ComputeKernel.hpp"
 #include "Decomposition.hpp"
-#include "Utilities.hpp"
-#include "Timer.hpp"
+#include "../support/Utilities.hpp"
+#include "../support/Timer.hpp"
 #include <unordered_map>
 #include <iostream>
-#include "SymbolicMatrix.hpp"
+// #include "SymbolicMatrix.hpp"
 
 namespace Sym {
 
@@ -151,7 +151,7 @@ class ComputeUnit {
     std::string code;
 
     void addExpressions(const Symbolic* expr, const int len, int& id);
-    void addExpressions(const SymbolicMatrix* exprMatrix, const int len, int& id);
+    // void addExpressions(const SymbolicMatrix* exprMatrix, const int len, int& id);
 
     // since we recursively add expressions, when we reach to the point that there is no more matrix to parse
     // then we hit the end of recursion, don't do anything

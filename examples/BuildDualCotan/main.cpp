@@ -2,11 +2,11 @@
 #include <iostream>
 #include <fstream>
 
-#include "../../src/Symbolic.hpp"
-#include "../../src/SymbolicUtilities.hpp"
-#include "../../src/ComputeUnit.hpp"
-#include "../../src/Timer.hpp"
-#include "../../src/Utilities.hpp"
+#include "../../src/scalar/Symbolic.hpp"
+#include "../../src/scalar/SymbolicUtilities.hpp"
+#include "../../src/scalar/ComputeUnit.hpp"
+#include "../../src/support/Timer.hpp"
+#include "../../src/support/Utilities.hpp"
 
 #include "dualCotan.hpp"
 
@@ -58,14 +58,16 @@ int main(int argc, char* argv[])
     }
 
     Eigen::SparseMatrix<double> L0, L2, M0, M2;
+    Timer t;
     dualLaplace(V, T, L0, M0);
+    t.printTime("execute without symbolic");
     L2 = L0;
     M2 = M0;
 
     auto Vs = makeSymbolic(V, 0);
     Eigen::SparseMatrix<Symbolic> Ls, Ms;
 
-    Timer t;
+    
     dualLaplace(Vs, T, Ls, Ms);
     t.printTime("execute");
 
@@ -79,6 +81,7 @@ int main(int argc, char* argv[])
     t.printTime("execute");
 
     unit.getResults(L2);
+    t.printTime("get result");
 
     std::cout << "residual: " << squaredError(L0, L2) << std::endl;
     printDifferences(L0, L2, 1e-7);

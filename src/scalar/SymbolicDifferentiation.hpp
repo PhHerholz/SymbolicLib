@@ -2,9 +2,9 @@
 
 #include "Symbolic.hpp"
 #include "SymbolicUtilities.hpp"
-#include "Traverse.hpp"
+#include "../support/Traverse.hpp"
 #include "Simplify.hpp"
-#include "Hashing.hpp"
+#include "../support/Hashing.hpp"
 #include "CodeGenerator.hpp"
 #include "Decomposition.hpp"
 #include <unordered_set>

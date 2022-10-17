@@ -2,7 +2,7 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
-#include "Symbolic.hpp"
+#include "../scalar/Symbolic.hpp"
 // #include "SymbolicMatrix.hpp"
 
 // // for symbolic matrices

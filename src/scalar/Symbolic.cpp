@@ -1,7 +1,7 @@
 #include "Symbolic.hpp"
-#include "Hashing.hpp"
-#include "Utilities.hpp"
-#include "Traverse.hpp"
+#include "../support/Hashing.hpp"
+#include "../support/Utilities.hpp"
+#include "../support/Traverse.hpp"
 #include <iostream>
 #include <assert.h>
 #include <algorithm>
@@ -49,13 +49,31 @@ Symbolic::Data::Data(const OpType _op, const Symbolic& c0, const Symbolic& c1)
     init();
 }
 
-Symbolic::Data::Data(int a0, int a1) : op(VAR), numChilds(0), variable{ a0, a1 } {
+Symbolic::Data::Data(int a0, int a1): op(VAR), numChilds(0), variable{ a0, a1 } {
     init();
 }
 
 Symbolic::Data::~Data() {
     if (numChilds) delete[] childs;
     --instanceCounter;
+}
+
+const string Symbolic::Data::toString() const {
+    if (op == VAR) {
+        return "[" + to_string(variable[1]) + ", " + to_string(variable[0]) + "]";
+    } else {
+        vector<string> childStrings;
+        for (int i = 0; i < numChilds; i++) {
+            childStrings.push_back(childs[i].toString());
+        }
+        string finalString = "(" + childStrings[0];
+        for (int i = 1; i < numChilds; i++) {
+            finalString += OpInfos[op].opSymbol + childStrings[i];
+        }
+        finalString += ")";
+        return finalString;
+    }
+    return "";
 }
 
 void Symbolic::Data::computeAlgebraicHash() {
@@ -142,11 +160,11 @@ Symbolic::Symbolic(int a, int b) {
     data = new Data(a, b);
 }
 
-Symbolic::Symbolic(const Symbolic& a) : data(a.data) {
+Symbolic::Symbolic(const Symbolic& a): data(a.data) {
     if (data) ++data->ref;
 }
 
-Symbolic::Symbolic(Symbolic&& a) : data(a.data) {
+Symbolic::Symbolic(Symbolic&& a): data(a.data) {
     a.data = nullptr;
 }
 
@@ -168,8 +186,8 @@ Symbolic::~Symbolic() {
 hash_t Symbolic::computeStructureHash() const {
     return traverseGenerate<hash_t>(*this, [&](const Symbolic& x, const std::vector<hash_t>& hashes) {
         auto hashes2 = hashes;
-        hashes2.push_back(OpInfos[x.op()].hash);
-        return hashes2.size() == 1 ? hashes2.front() : hash(hashes2);
+    hashes2.push_back(OpInfos[x.op()].hash);
+    return hashes2.size() == 1 ? hashes2.front() : hash(hashes2);
         });
 }
 

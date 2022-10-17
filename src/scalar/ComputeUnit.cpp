@@ -1,10 +1,10 @@
 #include "ComputeUnit.hpp"
-#include "Hashing.hpp"
-#include "Utilities.hpp"
+#include "../support/Hashing.hpp"
+#include "../support/Utilities.hpp"
 #include "CodeGenerator.hpp"
-#include "StringTools.hpp"
+#include "../support/StringTools.hpp"
 #include "StringResources.h"
-#include "Timer.hpp"
+#include "../support/Timer.hpp"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -227,16 +227,6 @@ void ComputeUnit<RealT>::addExpressions(const Symbolic* expr, const int len, int
     }
 }
 
-template <class RealT>
-void ComputeUnit<RealT>::addExpressions(const SymbolicMatrix* expr, const int len, int& id) {
-    if (expr->isInput()) {
-        // I haven't thought of what I should do here
-    } else {
-        outputExpressionsMatrix.push_back(Symbolic(ASSIGN, Symbolic(0, -10 - id), expr->getSymbolicRepresentation()));
-    }
-    ++id;
-    cout << "Adding expressions for symbolic matrix" << endl;
-}
 
 template <class RealT>
 void ComputeUnit<RealT>::initSymbolic() {
@@ -459,9 +449,34 @@ void ComputeUnit<RealT>::initSymbolic() {
     code = file.str();
 }
 
+// template <class RealT>
+// void ComputeUnit<RealT>::addExpressions(const SymbolicMatrix* expr, const int len, int& id) {
+//     if (expr->isInput()) {
+//         // I haven't thought of what I should do here
+//         // inputExpressionsID.push_back();
+//     } else {
+//         outputExpressionsMatrix.push_back(Symbolic(ASSIGN, Symbolic(0, -10 - id), expr->getSymbolicRepresentation()));
+//         ++id;
+//     }
+//     cout << "Adding expressions for symbolic matrix" << endl;
+// }
+
 template <class RealT>
 void ComputeUnit<RealT>::initMatrix(){
-
+    // so, ideally, let's say we are only dealing with one output matrix here
+    // now what we want to do, is to see if there's anything we can gain here
+    // by grouping subexpressions together
+    // this is different from normal symbolics in the following way:
+    // think of this example: A * A * A * A, the tree is not balanced at all
+    // we want to extract A * A, this is easy, we can flat it out, then group them since
+    // multiplication is not communitive.
+    // However, now think about A * A * (A * A)^T, what shall we do here?
+    // ideally we also want to extract A * A, and that's the hard part
+    
+    assert(outputExpressionsMatrix.size() > 0 );
+    Symbolic symbolicMatrixRepresentation = outputExpressionsMatrix[0];
+    cout << "Init matrix method reached" << endl;
+    // first we want to flat the tree
 }
 
 template <class RealT>

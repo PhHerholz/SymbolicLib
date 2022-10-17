@@ -5,11 +5,11 @@
 #include <fstream>
 #include <filesystem>
 
-#include "../../src/Symbolic.hpp"
-#include "../../src/SymbolicUtilities.hpp"
-#include "../../src/ComputeUnit.hpp"
-#include "../../src/Timer.hpp"
-#include "../../src/Utilities.hpp"
+#include "../../src/scalar/Symbolic.hpp"
+#include "../../src/scalar/SymbolicUtilities.hpp"
+#include "../../src/scalar/ComputeUnit.hpp"
+#include "../../src/support/Timer.hpp"
+#include "../../src/support/Utilities.hpp"
 
 #include "../dataPath.hpp"
 

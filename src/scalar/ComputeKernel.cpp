@@ -1,8 +1,8 @@
 #include "ComputeKernel.hpp"
-#include "Hashing.hpp"
+#include "../support/Hashing.hpp"
 #include "CodeGenerator.hpp"
-#include "Utilities.hpp"
-#include "StringTools.hpp"
+#include "../support/Utilities.hpp"
+#include "../support/StringTools.hpp"
 #include "Decomposition.hpp"
 #include "Simplify.hpp"
 #include <memory>

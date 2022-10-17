@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "Symbolic.hpp"
+#include "../scalar/Symbolic.hpp"
 
 namespace Sym {
 

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Symbolic.hpp"
-#include "ContainerSupport.h"
-#include "Utilities.hpp"
+#include "../support/ContainerSupport.h"
+#include "../support/Utilities.hpp"
 #include <unordered_map>
 
 namespace Sym {

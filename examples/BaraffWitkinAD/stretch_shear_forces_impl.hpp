@@ -1,4 +1,4 @@
-#include "../../src/SymbolicUtilities.hpp"
+#include "../../src/scalar/SymbolicUtilities.hpp"
 
 using namespace std;
 

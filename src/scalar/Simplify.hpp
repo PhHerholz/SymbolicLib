@@ -2,6 +2,7 @@
 
 #include "Symbolic.hpp"
 #include "SymbolicUtilities.hpp"
+#include <vector>
 
 namespace Sym {
 
@@ -24,6 +25,14 @@ Symbolic simplify(const Symbolic& x);
 Symbolic removeConstantExpressions(const Symbolic& x);
 
 Symbolic referenceRedundant(Symbolic& x);
+
+std::vector<Symbolic> isolateMultiplication(const Symbolic& x); // this function will return a vector of symbolics that has the operation of multiplication, we want to isolate them to check children to fild repeated combinations
+
+std::vector<Symbolic> findRepetition(Symbolic& x, int& index); // this will give us a topologic order of execution order, with repeated subtree isolated
+
+Symbolic reconstructTree(const Symbolic& expr); // for reconstructing a simple tree in matrix case
+
+void replaceRepetitionAcrossNodes(std::vector<std::vector<Symbolic>>& childs, std::vector<std::vector<hash_t>>& hashes, const std::vector<Symbolic>& newNodes);
 
 template<class... Args>
 void referenceRedundant(Args&... args) {
