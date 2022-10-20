@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../scalar/Symbolic.hpp"
+#include "../matrix/SymbolicMatrix.hpp"
 #include "Utilities.hpp"
 #include <unordered_map>
 #include <vector>
@@ -12,6 +13,12 @@ void prePostOrderTraverse(const Symbolic& x, std::function<bool(const Symbolic&)
 void postOrderTraverse(const Symbolic& x, std::function<void(const Symbolic&)> fun);
 
 void preOrderTraverse(const Symbolic& x, std::function<bool(const Symbolic&)> fun, const bool unique = false);
+
+void prePostOrderTraverse(const SymbolicMatrix& x, std::function<bool(const SymbolicMatrix&)> preFun, std::function<void(const SymbolicMatrix&)> postFun);
+
+void postOrderTraverse(const SymbolicMatrix& x, std::function<void(const SymbolicMatrix&)> fun);
+
+void preOrderTraverse(const SymbolicMatrix& x, std::function<bool(const SymbolicMatrix&)> fun, const bool unique = false);
 
 std::vector<Symbolic> harvestOp(OpType op, const Symbolic& x);
 

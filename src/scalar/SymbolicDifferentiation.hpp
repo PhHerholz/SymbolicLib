@@ -5,7 +5,7 @@
 #include "../support/Traverse.hpp"
 #include "Simplify.hpp"
 #include "../support/Hashing.hpp"
-#include "CodeGenerator.hpp"
+// #include "CodeGenerator.hpp"
 #include "Decomposition.hpp"
 #include <unordered_set>
 #include <unordered_map>

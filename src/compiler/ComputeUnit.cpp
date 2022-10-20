@@ -5,6 +5,7 @@
 #include "../support/StringTools.hpp"
 #include "StringResources.h"
 #include "../support/Timer.hpp"
+#include "../matrix/SimplifyMatrix.hpp"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -169,6 +170,12 @@ void ComputeUnit<RealT>::compile(const string& code)
 }
 
 template <class RealT>
+void ComputeUnit<RealT>::addExpressions(const SymbolicMatrix& m) {
+    outputExpressionsMatrix.push_back(m);
+    // cout << "Added symbolic matrix" << endl;
+}
+
+template <class RealT>
 void ComputeUnit<RealT>::addExpressions(const Symbolic* expr, const int len, int& id)
 {
 
@@ -242,12 +249,15 @@ void ComputeUnit<RealT>::initSymbolic() {
     // is a list of index that points to the correct location in blocks
     // blocks is a vector<ExpressionBlock>
     // GLOBAL_INTERMEDIATE is 254
+    Timer t;
     auto blocks = decompose(outputExpressions, device.decompositionThreshold, GLOBAL_INTERMEDIATE, true);
+    t.printTime("Decompose");
 
     // group blocks by structure hash
     // remember, blocks contain ExpressionBlocks
     // that are only unique by algebraic hash
     auto groupIds = group(blocks);
+    t.printTime("Group Blocks");
     vector<int> blockGroup(blocks.size());
 
     for (int i = 0; i < groupIds.size(); ++i)
@@ -273,7 +283,7 @@ void ComputeUnit<RealT>::initSymbolic() {
         else
             kernels.emplace_back(group, 1);
     }
-
+    t.printTime("For loop extract symbolic");
     // sort kernels by dependencies
     vector<set<int>> kernelDependencies(kernels.size());
     for (int i = 0; i < blocks.size(); ++i)
@@ -287,12 +297,14 @@ void ComputeUnit<RealT>::initSymbolic() {
             }
         }
     }
+    t.printTime("Sort kernel");
     // after this for loop, we will get:
     // for each kernel. its children kernels
 
     auto order = topologicalOrder(kernelDependencies);
     // reorder the kernels by topological order
     reorder(kernels, order);
+    t.printTime("Reorder kernel");
 
     // fix addresses to allow for coalesced access if possible
     for (auto& k : kernels)
@@ -329,6 +341,7 @@ void ComputeUnit<RealT>::initSymbolic() {
             }
         }
     }
+    t.printTime("Concatenate output id");
 
     outputIdsFlat = flatten(outputIds);
 
@@ -363,6 +376,7 @@ void ComputeUnit<RealT>::initSymbolic() {
     saveData("constData", constantData);
     saveData("indexData", positionData);
     saveData("outIndexData", outputIdsFlat);
+    t.printTime("Save all datas");
 
     stringstream file;
     file << (device.cudaDevice ? cudaHeader<RealT>() : (device.hipDevice ? hipHeader<RealT>() : cpuHeader<RealT>()));
@@ -447,6 +461,7 @@ void ComputeUnit<RealT>::initSymbolic() {
 
     file << (device.cudaDevice ? cudaFooter : (device.hipDevice ? hipFooter : cpuFooter));
     code = file.str();
+    t.printTime("Set code");
 }
 
 // template <class RealT>
@@ -462,7 +477,7 @@ void ComputeUnit<RealT>::initSymbolic() {
 // }
 
 template <class RealT>
-void ComputeUnit<RealT>::initMatrix(){
+void ComputeUnit<RealT>::initMatrix() {
     // so, ideally, let's say we are only dealing with one output matrix here
     // now what we want to do, is to see if there's anything we can gain here
     // by grouping subexpressions together
@@ -472,9 +487,13 @@ void ComputeUnit<RealT>::initMatrix(){
     // multiplication is not communitive.
     // However, now think about A * A * (A * A)^T, what shall we do here?
     // ideally we also want to extract A * A, and that's the hard part
-    
-    assert(outputExpressionsMatrix.size() > 0 );
-    Symbolic symbolicMatrixRepresentation = outputExpressionsMatrix[0];
+
+    assert(outputExpressionsMatrix.size() > 0);
+    SymbolicMatrix symbolicMatrixRepresentation = outputExpressionsMatrix[0];
+    vector<SymbolicMatrix> simplifiedResult = findRepetition(outputExpressionsMatrix[0]);
+    for (int i = 0; i < simplifiedResult.size(); i++) {
+        cout << simplifiedResult[i].toString() << endl;
+    }
     cout << "Init matrix method reached" << endl;
     // first we want to flat the tree
 }

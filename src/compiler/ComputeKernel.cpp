@@ -3,8 +3,8 @@
 #include "CodeGenerator.hpp"
 #include "../support/Utilities.hpp"
 #include "../support/StringTools.hpp"
-#include "Decomposition.hpp"
-#include "Simplify.hpp"
+#include "../scalar/Decomposition.hpp"
+#include "../scalar/Simplify.hpp"
 #include <memory>
 #include <map>
 #include <utility>

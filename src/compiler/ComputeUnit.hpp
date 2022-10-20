@@ -1,14 +1,14 @@
 #pragma once
 
 #include "../support/ContainerSupport.h"
-#include "Symbolic.hpp"
+#include "../scalar/Symbolic.hpp"
 #include "ComputeKernel.hpp"
-#include "Decomposition.hpp"
+#include "../scalar/Decomposition.hpp"
 #include "../support/Utilities.hpp"
 #include "../support/Timer.hpp"
 #include <unordered_map>
 #include <iostream>
-// #include "SymbolicMatrix.hpp"
+#include "../matrix/SymbolicMatrix.hpp"
 
 namespace Sym {
 
@@ -120,7 +120,7 @@ class ComputeUnit {
 
     // all expressions handed over by the user
     std::vector<Symbolic> outputExpressions;
-    std::vector<Symbolic> outputExpressionsMatrix; // this is specifically for matrix operations
+    std::vector<SymbolicMatrix> outputExpressionsMatrix; // this is specifically for matrix operations
 
     // offsets for input data
     size_t inputDataSize = 0;
@@ -151,12 +151,17 @@ class ComputeUnit {
     std::string code;
 
     void addExpressions(const Symbolic* expr, const int len, int& id);
+    void addExpressions(const SymbolicMatrix& m);
     // void addExpressions(const SymbolicMatrix* exprMatrix, const int len, int& id);
 
     // since we recursively add expressions, when we reach to the point that there is no more matrix to parse
     // then we hit the end of recursion, don't do anything
     template<class ...TArgs>
     void setExpressions(const int id) {}
+
+    void setExpressions(const SymbolicMatrix& m) {
+        addExpressions(m);
+    }
 
     // recursively add expression
     template<class T, class ...TArgs>
@@ -203,6 +208,11 @@ public:
     template<class ...TArg>
     ComputeUnit(Device device_, const TArg& ... expressions): device(device_) {
         setExpressions(0, expressions...);
+        init();
+    }
+
+    ComputeUnit(Device device_, const SymbolicMatrix& m):device(device_) {
+        setExpressions(m);
         init();
     }
 

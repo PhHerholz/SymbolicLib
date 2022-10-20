@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "Symbolic.hpp"
+#include "../scalar/Symbolic.hpp"
 #include <functional>
 
 namespace Sym {

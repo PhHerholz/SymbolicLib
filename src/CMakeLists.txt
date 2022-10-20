@@ -41,7 +41,7 @@ elseif (APPLE)
     set(OpenMP_omp_LIBRARY /usr/local/opt/libomp/lib/libomp.dylib)
 endif()
 
-file(GLOB sources ${SOURCE_DIR}/support/*.cpp ${SOURCE_DIR}/support/*.hpp ${SOURCE_DIR}/support/*.h ${SOURCE_DIR}/scalar/*.cpp ${SOURCE_DIR}/scalar/*.hpp ${SOURCE_DIR}/scalar/*.h ${SOURCE_DIR}/matrix/*.cpp ${SOURCE_DIR}/matrix/*.hpp ${SOURCE_DIR}/matrix/*.h)
+file(GLOB sources ${SOURCE_DIR}/support/*.cpp ${SOURCE_DIR}/support/*.hpp ${SOURCE_DIR}/support/*.h ${SOURCE_DIR}/scalar/*.cpp ${SOURCE_DIR}/scalar/*.hpp ${SOURCE_DIR}/scalar/*.h ${SOURCE_DIR}/matrix/*.cpp ${SOURCE_DIR}/matrix/*.hpp ${SOURCE_DIR}/matrix/*.h ${SOURCE_DIR}/compiler/*.cpp ${SOURCE_DIR}/compiler/*.hpp ${SOURCE_DIR}/compiler/*.h)
 include_directories(${INCLUDE_DIRS} ${SOURCE_DIR})
 
 add_library(Symbolic ${sources})

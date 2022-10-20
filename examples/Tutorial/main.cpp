@@ -7,8 +7,9 @@
 
 #include "../../src/scalar/Symbolic.hpp"
 #include "../../src/scalar/SymbolicDifferentiation.hpp"
-#include "../../src/scalar/ComputeUnit.hpp"
+#include "../../src/compiler/ComputeUnit.hpp"
 #include "../../src/support/ComputeUnitAvailability.h"
+#include "../../src/matrix/SymbolicMatrix.hpp"
 #include "../dataPath.hpp"
 
 int main(int argc, char* argv[]) {
@@ -38,6 +39,11 @@ int main(int argc, char* argv[]) {
 
     // The function 'makeSymbolic' builds a copy of the sparse matrix 'A' and replaces each value with a variable of group 0.
     Eigen::SparseMatrix<Symbolic> AS = makeSymbolic(A, 0);
+    SymbolicMatrix AM = SymbolicMatrix(A, 0);
+    SymbolicMatrix CM = SymbolicMatrix(A * 2, 1);
+    SymbolicMatrix BM =  AM * CM * AM * CM + AM * CM * AM + AM * CM * AM;
+    // cout << BM.toString() << endl;
+    ComputeUnit<double> unit2(Device(VecWidth(4), NumThreads(8)), BM);
 
     // The symbolic matrix BS stores symbolic expressions for each entry
     Eigen::SparseMatrix<Symbolic> BS = AS.transpose() * AS * AS;

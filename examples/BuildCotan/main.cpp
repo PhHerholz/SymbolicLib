@@ -7,7 +7,7 @@
 
 #include "../../src/scalar/Symbolic.hpp"
 #include "../../src/scalar/SymbolicUtilities.hpp"
-#include "../../src/scalar/ComputeUnit.hpp"
+#include "../../src/compiler/ComputeUnit.hpp"
 #include "../../src/support/Timer.hpp"
 #include "../../src/support/Utilities.hpp"
 

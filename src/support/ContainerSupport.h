@@ -70,7 +70,7 @@ size_t contSize(const Eigen::SparseMatrix<T>& c) {
 namespace Sym {
 
 template<class T>
-Eigen::SparseMatrix<Symbolic> makeSymbolic(Eigen::SparseMatrix<T>& A, const int objId) {
+Eigen::SparseMatrix<Symbolic> makeSymbolic(const Eigen::SparseMatrix<T>& A, const int objId) {
     Eigen::SparseMatrix<Symbolic> B;
     B = A.template cast<Symbolic>();
     for (int i = 0; i < B.nonZeros(); ++i) B.valuePtr()[i] = Symbolic(i, objId);
@@ -78,7 +78,7 @@ Eigen::SparseMatrix<Symbolic> makeSymbolic(Eigen::SparseMatrix<T>& A, const int 
 }
 
 template<class T, int N, int M>
-Eigen::Matrix<Symbolic, N, M> makeSymbolic(Eigen::Matrix<T, N, M>& A, const int objId) {
+Eigen::Matrix<Symbolic, N, M> makeSymbolic(const Eigen::Matrix<T, N, M>& A, const int objId) {
     Eigen::Matrix<Symbolic, N, M> B;
     B.resizeLike(A);
     for (int i = 0; i < B.size(); ++i) B.data()[i] = Symbolic(i, objId);

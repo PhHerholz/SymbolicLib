@@ -1,13 +1,27 @@
-// #include "OperationsMatrix.hpp"
-// #include "SymbolicMatrix.hpp"
+#include "OperationsMatrix.hpp"
+#include "SymbolicMatrix.hpp"
 
-// using namespace std;
-// namespace Sym {
+using namespace std;
+namespace Sym {
 
-// SymbolicMatrix operator*(const SymbolicMatrix& a, const SymbolicMatrix& b) {
-//     // this just returns a new tree
-//     // however, we will need to process the tree later on to determine if there
-//     // are operations that is repeated
-//     return SymbolicMatrix(MUL_MATRIX, a, b);
-// }
-// }
+SymbolicMatrix operator*(const SymbolicMatrix& a, const SymbolicMatrix& b) {
+    if (a.op() == CONST_MATRIX) return SymbolicMatrix(MULC, a, b);
+    else if (b.op() == CONST_MATRIX) return SymbolicMatrix(MULC, a, b);
+    else return SymbolicMatrix(MUL_MATRIX, a, b);
+}
+
+SymbolicMatrix operator*=(SymbolicMatrix& a, const SymbolicMatrix& b) {
+    a = a * b;
+    return a;
+}
+
+SymbolicMatrix operator+(const SymbolicMatrix& a, const SymbolicMatrix& b) {
+    return SymbolicMatrix(ADD_MATRIX, a, b);
+}
+
+SymbolicMatrix operator+=(SymbolicMatrix& a, const SymbolicMatrix& b) {
+    a = SymbolicMatrix(ADD_MATRIX, a, b);
+    return a;
+}
+
+}

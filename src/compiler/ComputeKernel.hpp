@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Symbolic.hpp"
+#include "../scalar/Symbolic.hpp"
 #include <vector>
 
 namespace Sym {

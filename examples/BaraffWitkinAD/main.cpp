@@ -4,7 +4,7 @@
 #pragma warning(pop)
 
 #include "../../src/scalar/Symbolic.hpp"
-#include "../../src/scalar/ComputeUnit.hpp"
+#include "../../src/compiler/ComputeUnit.hpp"
 #include "../../src/support/Timer.hpp"
 #include "../../src/scalar/SymbolicDifferentiation.hpp"
 #include "stretch_shear_forces.hpp"
