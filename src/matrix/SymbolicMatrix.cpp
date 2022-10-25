@@ -93,7 +93,9 @@ void SymbolicMatrix::Data::computeAlgebraicHash() {
             h = 1;
             for (unsigned int i = 0; i < numChilds; ++i) {
                 if (childs[i].op() == ADD) h *= hash(OpInfos[ADD].hash, childs[i].ahash());
-                else h *= childs[i].ahash();
+                // the ahash for multiplication needs to be changed
+                // because matrix multilication should not be communitative
+                else h *= childs[i].ahash() + i;
             }
             break;
 
