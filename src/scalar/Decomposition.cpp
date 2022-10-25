@@ -251,7 +251,7 @@ vector<ExpressionBlock> decompose(const vector<Sym::Symbolic>& expr,
     unordered_map<hash_t, pair<unsigned int, unsigned int>, IdentityHash<hash_t>> exprCount;
 
     Timer t;
-    // Timer::silence();
+    Timer::silence();
     int id = 0;
 
     for (const auto& x : expr) {
