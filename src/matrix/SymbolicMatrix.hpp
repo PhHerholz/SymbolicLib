@@ -78,6 +78,8 @@ public:
 
         const std::string toString() const;
 
+        Eigen::SparseMatrix<Symbolic> getEigenSymbolicMatrix() { return symM; }
+
     public:
         static long long instanceCounter;
 
@@ -174,6 +176,11 @@ public:
 
     const std::string toString() const {
         return data->toString();
+    }
+
+    // return the variable matrix
+    Eigen::SparseMatrix<Symbolic> getEigenSymbolicMatrix() const {
+        return data->getEigenSymbolicMatrix();
     }
 
 };
