@@ -36,17 +36,38 @@ int main(int argc, char* argv[]) {
     // Let us consider a more complex example: multiplying a matrix with itself.
     Eigen::SparseMatrix<double> A;
     Eigen::loadMarket(A, filePath() + "/sphere.mtx");
+    A *= 200000;
+    Eigen::SparseMatrix<double> C = A * 1000000;
+    double res_value = 0;
+    Eigen::SparseMatrix<double> res1 = A * A;
+    std::cout << res1.nonZeros() << std::endl;
+    for (int i = 0; i < res1.nonZeros(); i++) {
+        res_value += res1.valuePtr()[i];
+    }
+    std::cout << "True result: " << res_value << std::endl;
+    // Eigen::SparseMatrix<double> res2 = res1 * A;
+    // Eigen::SparseMatrix<double> res3 = res1 * res1 + res2 + res2 * A;
 
     // The function 'makeSymbolic' builds a copy of the sparse matrix 'A' and replaces each value with a variable of group 0.
     Eigen::SparseMatrix<Symbolic> AS = makeSymbolic(A, 0);
     SymbolicMatrix AM = SymbolicMatrix(A, 0);
-    SymbolicMatrix CM = SymbolicMatrix(A * 2, 1);
-    SymbolicMatrix BM =  AM * CM * AM * CM + AM * CM * AM + AM * CM * AM;
+    SymbolicMatrix CM = SymbolicMatrix(C, 1);
+    SymbolicMatrix BM = AM * AM;
     // cout << BM.toString() << endl;
     ComputeUnit<double> unit2(Device(VecWidth(4), NumThreads(8)), BM);
+    // res_value = 0;
+    // for (int i = 0; i < A.nonZeros(); i++) {
+    //     res_value += A.valuePtr()[i];
+    // }
+    // std::cout << "True result: " << res_value << std::endl;
+    unit2.executeMatrix(A);
+    // cout << res1.nonZeros() << endl;
+    // cout << res2.nonZeros() << endl;
+    // cout << res3.nonZeros() << endl;
+
 
     // The symbolic matrix BS stores symbolic expressions for each entry
-    Eigen::SparseMatrix<Symbolic> BS = AS.transpose() * AS * AS;
+    Eigen::SparseMatrix<Symbolic> BS = AS * AS;
 
     // We want to compile a program that evaluates the expression. Compute unit defines such a program; the first parameter
     // requests a vectorized program using 256 AVX2 registers holding 4 doubles. 'NumThreads(8)' defines a parallelized implementation
@@ -54,13 +75,18 @@ int main(int argc, char* argv[]) {
     ComputeUnit<double> unit(Device(VecWidth(4), NumThreads(8)), AS, BS);
 
     // Compile, link and execture the program using the numeric values contained in A.
-    unit.compile().execute(A);
+    unit.compile("abc").execute(A);
 
     // Retrieve the result and compare to a reverence solution
-    Eigen::SparseMatrix<double> B = A.transpose() * A * A;
+    Eigen::SparseMatrix<double> B = A * A;
     Eigen::SparseMatrix<double> B2 = 0. * B;
 
     unit.getResults(B2);
+    res_value = 0;
+    for (int i = 0; i < B2.nonZeros(); i++) {
+        res_value += B2.valuePtr()[i];
+    }
+    std::cout << "True result: " << res_value << std::endl;
     unit.close(); // Unlink the generated library
 
     cout << "difference: " << (B - B2).norm() << endl;

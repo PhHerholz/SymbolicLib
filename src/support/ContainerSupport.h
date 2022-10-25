@@ -13,6 +13,13 @@
 // inline size_t countSize(const Sym::SymbolicMatrix& m){
 //     return 1;
 // }
+// double* contPtr(std::vector<double>& c) {
+//     return c.data();
+// }
+
+// float* contPtr(std::vector<double>& c) {
+//     return c.data();
+// }
 
 template<class Cont>
 auto contPtr(Cont& c) {

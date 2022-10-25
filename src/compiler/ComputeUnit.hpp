@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <iostream>
 #include "../matrix/SymbolicMatrix.hpp"
+#include <Eigen/Sparse>
 
 namespace Sym {
 
@@ -150,8 +151,14 @@ class ComputeUnit {
     // holding the program code
     std::string code;
 
+
     void addExpressions(const Symbolic* expr, const int len, int& id);
     void addExpressions(const SymbolicMatrix& m);
+    void addExpressions(const std::vector<Eigen::SparseMatrix<Symbolic>>& exprs, int& id) {
+        for (int i = 0; i < exprs.size(); i++) {
+            addExpressions(contPtr(exprs[i]), contSize(exprs[i]), id);
+        }
+    }
     // void addExpressions(const SymbolicMatrix* exprMatrix, const int len, int& id);
 
     // since we recursively add expressions, when we reach to the point that there is no more matrix to parse
@@ -161,6 +168,11 @@ class ComputeUnit {
 
     void setExpressions(const SymbolicMatrix& m) {
         addExpressions(m);
+    }
+
+    void setExpressions(int id, const std::vector<Eigen::SparseMatrix<Symbolic>>& exprs) {
+        addExpressions(exprs, id);
+        // std::cout << "Add expressions for vector" << std::endl;
     }
 
     // recursively add expression
@@ -196,12 +208,17 @@ class ComputeUnit {
     void initSymbolic(); // this is when we override each symbolic type
     void initMatrix(); // this is when we init with symbolicMatrix type
 
-    void compile(const std::string& code);
+    // make this compile private so no conflict
+private:
+    void compileCode(const std::string& code, const std::string& suffix = "");
+    std::vector<ComputeUnit<RealT>> matrixExecutionUnits;
+    std::string codeFileSuffix;
+    std::vector<std::vector<RealT>> inputOutputDatas;
 
 public:
     ~ComputeUnit();
 
-    ComputeUnit& compile();
+    ComputeUnit& compile(const std::string& suffix = "");
 
     void close();
 
@@ -209,6 +226,7 @@ public:
     ComputeUnit(Device device_, const TArg& ... expressions): device(device_) {
         setExpressions(0, expressions...);
         init();
+        // std::cout << "Finished init" << std::endl;
     }
 
     ComputeUnit(Device device_, const SymbolicMatrix& m):device(device_) {
@@ -216,10 +234,33 @@ public:
         init();
     }
 
+    // ComputeUnit& execute(const std::vector<Eigen::SparseMatrix<double>>& expressions){
+
+    // }
+
     template<class ...TArg>
     ComputeUnit& execute(const TArg& ... expressions) {
+        // if (matrixExecutionUnits.size() == 0) {
         setArgs(0, expressions...);
         if (runFunc) runFunc();
+        return *this;
+        // } else {
+        //     executeMatrix(expressions...);
+        //     return *this;
+        // }
+    }
+
+    template<class ...TArg>
+    ComputeUnit& executeMatrix(const TArg& ... expressions) {
+        matrixExecutionUnits[0].execute(expressions...);
+        matrixExecutionUnits[0].getResults(inputOutputDatas[1]);
+        double res = 0;
+        for (int i = 0; i < inputOutputDatas[1].size(); i++) {
+            res += inputOutputDatas[1][i];
+        }
+        std::cout << inputOutputDatas[1].size() << std::endl;
+        std::cout << "Res: " << res << std::endl;
+        // matrixExecutionUnits[0].runFunc();
         return *this;
     }
 

@@ -176,11 +176,11 @@ pair<vector<SymbolicMatrix>, vector<hash_t>> findRepetitionWithinSelf(const vect
                 if (checkExistenceResult != -1) {
                     // this node already exists, we just need to reference it
                     newIndex = -checkExistenceResult - 1;
-                    // cout << "We found repeated at index: " << checkExistenceResult << ", newIndex set to " << newIndex << endl;
+                    cout << "We found repeated at index: " << checkExistenceResult << ", newIndex set to " << newIndex << endl;
                 } else {
                     // this node does not exist yet, push it to newNodes
-                    // cout << "This is a new repeated node" << endl;
-                    // cout << newIntermediateNode.toString() << endl;
+                    cout << "This is a new repeated node" << endl;
+                    cout << newIntermediateNode.toString() << endl;
                     newNodes.push_back(newIntermediateNode);
                     index--;
                 }
@@ -437,6 +437,7 @@ vector<SymbolicMatrix> findRepetition(SymbolicMatrix& m) {
     vector<vector<hash_t>> newChildsHash(childsHashOfThoseNodes);
     vector<SymbolicMatrix> newIntermediateNodes;
     for (int i = 0; i < nodesContainingMultiplication.size(); i++) {
+        // cout << i << endl;
         pair<vector<SymbolicMatrix>, vector<hash_t>> result = findRepetitionWithinSelf(childsOfThoseNodes[i], childsHashOfThoseNodes[i], index, newIntermediateNodes);
         newChilds[i] = result.first;
         newChildsHash[i] = result.second;

@@ -6,6 +6,7 @@
 #include "StringResources.h"
 #include "../support/Timer.hpp"
 #include "../matrix/SimplifyMatrix.hpp"
+#include "../support/Traverse.hpp"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -15,6 +16,7 @@
 #include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <Eigen/Sparse>
 
 #ifdef _MSC_VER
 #include <windows.h>
@@ -26,6 +28,7 @@
 #endif
 
 using namespace std;
+using namespace Eigen;
 
 namespace Sym
 {
@@ -75,11 +78,12 @@ void ComputeUnit<RealT>::close()
 }
 
 template <class RealT>
-void ComputeUnit<RealT>::compile(const string& code)
+void ComputeUnit<RealT>::compileCode(const string& code, const string& suffix)
 {
-
+    // cout << "Arrived compile code" << endl;
     // write code file
-    string fname = (device.cudaDevice ? "cudaCode.cu" : (device.hipDevice ? "hipCode.cpp" : "cpuCode.cpp"));
+    string fname = (device.cudaDevice ? "cudaCode" + suffix + ".cu" : (device.hipDevice ? "hipCode" + suffix + ".cpp" : "cpuCode" + suffix + ".cpp"));
+    // cout << fname << endl;
     ofstream file(fname);
     file << code;
     file.close();
@@ -89,12 +93,12 @@ void ComputeUnit<RealT>::compile(const string& code)
 
     if (device.cudaDevice)
     {
-        cmd += " && nvcc -I. --shared -O3 -o cudaCode.dll cudaCode.cu ";
+        cmd += " && nvcc -I. --shared -O3 -o cudaCode.dll" + fname;
         cmd += "-arch=sm_52 -gencode=arch=compute_52,code=sm_52  -gencode=arch=compute_60,code=sm_60   -gencode=arch=compute_61,code=sm_61   -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_75,code=sm_75  -gencode=arch=compute_80,code=sm_80 -gencode=arch=compute_86,code=sm_86  -gencode=arch=compute_87,code=sm_87 -gencode=arch=compute_87,code=compute_87";
     } else if (device.hipDevice) {
         std::cout << "HIP not supported on Windows." << std::endl;
     } else {
-        cmd += "&& cl cpuCode.cpp /LD /O2 /arch:AVX2 /std:c++17 /fp:fast /EHsc";
+        cmd += "&& cl " + fname + " /LD /O2 /arch:AVX2 /std:c++17 /fp:fast /EHsc";
 
         if (device.numThreads > 1)
         {
@@ -104,7 +108,7 @@ void ComputeUnit<RealT>::compile(const string& code)
 
     system(cmd.c_str());
 
-    libHandle = (void*)LoadLibrary(device.cudaDevice ? "cudaCode.dll" : "cpuCode.dll");
+    libHandle = (void*)LoadLibrary(device.cudaDevice ? "cudaCode" + suffix + ".dll" : "cpuCode" + suffix + ".dll");
 
     if (libHandle != nullptr)
     {
@@ -119,11 +123,11 @@ void ComputeUnit<RealT>::compile(const string& code)
     string cmd;
 
     if (device.cudaDevice) {
-        cmd = "nvcc -I../../data/ -Xcompiler '-fPIC -shared' -O3 -o cpuCode.so cudaCode.cu";
+        cmd = "nvcc -I../../data/ -Xcompiler '-fPIC -shared' -O3 -o cpuCode" + suffix + ".so cudaCode" + suffix + ".cu";
     } else if (device.hipDevice) {
-        cmd = "hipcc -fPIC -shared -O3 -ohipCode.so hipCode.cpp";
+        cmd = "hipcc -fPIC -shared -O3 -ohipCode" + suffix + ".so hipCode" + suffix + ".cpp";
     } else {
-        cmd = "clang++ -shared -fPIC -ffast-math -fno-trapping-math -fno-math-errno -fno-signed-zeros -O3 -std=c++17 -msse4.2 -mavx2 -mfma cpuCode.cpp -ocpuCode.so";
+        cmd = "clang++ -shared -fPIC -ffast-math -fno-trapping-math -fno-math-errno -fno-signed-zeros -O3 -std=c++17 -msse4.2 -mavx2 -mfma cpuCode" + suffix + ".cpp -ocpuCode" + suffix + ".so";
 
         if (device.numThreads > 1)
         {
@@ -144,7 +148,7 @@ void ComputeUnit<RealT>::compile(const string& code)
     }
 
     // link dynamic library and get function pointers
-    libHandle = dlopen((device.cudaDevice ? "./cudaCode.so" : (device.hipDevice ? "./hipCode.so" : "./cpuCode.so")), RTLD_LAZY);
+    libHandle = dlopen((device.cudaDevice ? ("./cudaCode" + suffix + ".so").c_str() : (device.hipDevice ? ("./hipCode" + suffix + ".so").c_str() : ("./cpuCode" + suffix + ".so").c_str())), RTLD_LAZY);
 
     finishFunc = (decltype(finishFunc))dlsym(libHandle, "finish");
     initFunc = (decltype(initFunc))dlsym(libHandle, "init");
@@ -166,7 +170,7 @@ void ComputeUnit<RealT>::compile(const string& code)
     }
 
     initFunc((const unsigned int*)positionData.data(), (const unsigned int*)outputIdsFlat.data(), (const RealT*)constantData.data());
-    std::cout << "Finished compiling and linking" << std::endl;
+    // std::cout << "Finished compiling and linking" << std::endl;
 }
 
 template <class RealT>
@@ -250,14 +254,15 @@ void ComputeUnit<RealT>::initSymbolic() {
     // blocks is a vector<ExpressionBlock>
     // GLOBAL_INTERMEDIATE is 254
     Timer t;
+    Timer::silence();
     auto blocks = decompose(outputExpressions, device.decompositionThreshold, GLOBAL_INTERMEDIATE, true);
-    t.printTime("Decompose");
+    // t.printTime("Decompose");
 
     // group blocks by structure hash
     // remember, blocks contain ExpressionBlocks
     // that are only unique by algebraic hash
     auto groupIds = group(blocks);
-    t.printTime("Group Blocks");
+    // t.printTime("Group Blocks");
     vector<int> blockGroup(blocks.size());
 
     for (int i = 0; i < groupIds.size(); ++i)
@@ -283,7 +288,7 @@ void ComputeUnit<RealT>::initSymbolic() {
         else
             kernels.emplace_back(group, 1);
     }
-    t.printTime("For loop extract symbolic");
+    // t.printTime("For loop extract symbolic");
     // sort kernels by dependencies
     vector<set<int>> kernelDependencies(kernels.size());
     for (int i = 0; i < blocks.size(); ++i)
@@ -297,14 +302,14 @@ void ComputeUnit<RealT>::initSymbolic() {
             }
         }
     }
-    t.printTime("Sort kernel");
+    // t.printTime("Sort kernel");
     // after this for loop, we will get:
     // for each kernel. its children kernels
 
     auto order = topologicalOrder(kernelDependencies);
     // reorder the kernels by topological order
     reorder(kernels, order);
-    t.printTime("Reorder kernel");
+    // t.printTime("Reorder kernel");
 
     // fix addresses to allow for coalesced access if possible
     for (auto& k : kernels)
@@ -341,7 +346,7 @@ void ComputeUnit<RealT>::initSymbolic() {
             }
         }
     }
-    t.printTime("Concatenate output id");
+    // t.printTime("Concatenate output id");
 
     outputIdsFlat = flatten(outputIds);
 
@@ -376,7 +381,7 @@ void ComputeUnit<RealT>::initSymbolic() {
     saveData("constData", constantData);
     saveData("indexData", positionData);
     saveData("outIndexData", outputIdsFlat);
-    t.printTime("Save all datas");
+    // t.printTime("Save all datas");
 
     stringstream file;
     file << (device.cudaDevice ? cudaHeader<RealT>() : (device.hipDevice ? hipHeader<RealT>() : cpuHeader<RealT>()));
@@ -461,7 +466,8 @@ void ComputeUnit<RealT>::initSymbolic() {
 
     file << (device.cudaDevice ? cudaFooter : (device.hipDevice ? hipFooter : cpuFooter));
     code = file.str();
-    t.printTime("Set code");
+    // t.printTime("Set code");
+    Timer::unsilence();
 }
 
 // template <class RealT>
@@ -475,6 +481,29 @@ void ComputeUnit<RealT>::initSymbolic() {
 //     }
 //     cout << "Adding expressions for symbolic matrix" << endl;
 // }
+
+SparseMatrix<Symbolic> materializeSymbolicMatrix(const SymbolicMatrix& m, const vector<SparseMatrix<Symbolic>>& inputAndIntermediateMatrices, const int inputMatrixCount) {
+    SparseMatrix<Symbolic> result;
+    switch (m.op()) {
+        case MUL_MATRIX:
+            return materializeSymbolicMatrix(m[0], inputAndIntermediateMatrices, inputMatrixCount) * materializeSymbolicMatrix(m[1], inputAndIntermediateMatrices, inputMatrixCount);
+        case ADD_MATRIX:
+            result = materializeSymbolicMatrix(m[0], inputAndIntermediateMatrices, inputMatrixCount);
+            for (int i = 1; i < m.numChilds(); i++) {
+                result += materializeSymbolicMatrix(m[i], inputAndIntermediateMatrices, inputMatrixCount);
+            }
+            return result;
+        case VAR_MATRIX:
+            if (m.matrixID() >= 0) {
+                return m.getEigenSymbolicMatrix();
+            } else {
+                return inputAndIntermediateMatrices[inputMatrixCount - m.matrixID() - 1];
+            }
+        Default:
+            return result;
+    }
+    return result;
+}
 
 template <class RealT>
 void ComputeUnit<RealT>::initMatrix() {
@@ -491,11 +520,58 @@ void ComputeUnit<RealT>::initMatrix() {
     assert(outputExpressionsMatrix.size() > 0);
     SymbolicMatrix symbolicMatrixRepresentation = outputExpressionsMatrix[0];
     vector<SymbolicMatrix> simplifiedResult = findRepetition(outputExpressionsMatrix[0]);
+    cout << "Final execution orders: " << endl;
     for (int i = 0; i < simplifiedResult.size(); i++) {
         cout << simplifiedResult[i].toString() << endl;
     }
-    cout << "Init matrix method reached" << endl;
-    // first we want to flat the tree
+    set<int> inputMatrixCountIDs;
+    set<int> intermediateMatrixIDs;
+    vector<SparseMatrix<Symbolic>> inputMatrices;
+    for (int i = 0; i < simplifiedResult.size(); i++) {
+        postOrderTraverse(simplifiedResult[i], [&](const SymbolicMatrix& x) {
+            if (x.op() == VAR_MATRIX) {
+                int id = x.matrixID();
+                if (id >= 0) {
+                    inputMatrixCountIDs.insert(id);
+                    if (id + 1 > inputMatrices.size()) {
+                        inputMatrices.resize(id + 1);
+                    }
+                    if (inputMatrices[id].rows() == 0) {
+                        inputMatrices[id] = x.getEigenSymbolicMatrix();
+                    }
+                } else {
+                    intermediateMatrixIDs.insert(id);
+                }
+            }
+            });
+    }
+    cout << "Input has " << inputMatrixCountIDs.size() << " matrices" << endl;
+    cout << "There are " << intermediateMatrixIDs.size() << " intermediate matrices" << endl;
+    // vector<SparseMatrix<Symbolic>> intermediateResults;
+    for (int i = 0; i < simplifiedResult.size(); i++) {
+        // compute the actual sparsity and the tree for each non-zero element
+        SparseMatrix<Symbolic> re = materializeSymbolicMatrix(simplifiedResult[i], inputMatrices, inputMatrixCountIDs.size());
+        // this is a new input matrix, we might use it later
+        inputMatrices.push_back(re);
+        // initialize a unit
+        matrixExecutionUnits.push_back(ComputeUnit<RealT>(device, inputMatrices));
+        // now that we had the sparsity, we want to make it an input matrix
+        // so in first iteration, we generate a matrix, and if the input has 2 matrices
+        // then this new matrix should have ID of 2 = 3-1
+        for (int j = 0; j < inputMatrices[inputMatrices.size() - 1].nonZeros(); j++) {
+            inputMatrices[inputMatrices.size() - 1].valuePtr()[j] = Symbolic(j, (int)inputMatrices.size() - 1);
+        }
+        cout << "Intermediate " << i << " has " << inputMatrices[inputMatrices.size() - 1].nonZeros() << " nonzeros." << endl;
+    }
+    for (int i = 0; i < simplifiedResult.size(); i++) {
+        matrixExecutionUnits[i].compile(to_string(i));
+    }
+    cout << "Finished compiling" << endl;
+    inputOutputDatas.resize(inputMatrices.size());
+    for (int i = 0; i < inputMatrices.size(); i++) {
+        inputOutputDatas[i].resize(inputMatrices[i].nonZeros());
+    }
+    cout << "Finished setting nonzero elements" << endl;
 }
 
 template <class RealT>
@@ -510,9 +586,10 @@ void ComputeUnit<RealT>::init()
 }
 
 template <class RealT>
-ComputeUnit<RealT>& ComputeUnit<RealT>::compile()
+ComputeUnit<RealT>& ComputeUnit<RealT>::compile(const string& suffix)
 {
-    compile(code);
+    codeFileSuffix = suffix;
+    compileCode(code, suffix);
     return *this;
 }
 
