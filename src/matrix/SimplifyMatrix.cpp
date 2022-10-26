@@ -448,7 +448,10 @@ vector<SymbolicMatrix> findRepetition(SymbolicMatrix& m) {
     newChildsHash = result.second;
 
     SymbolicMatrix newSymbolicWithoutRepetition = reconstructTreeWithoutRepetition(x, nodesContainingMultiplication, newChilds, newIntermediateNodes);
-    newIntermediateNodes.push_back(newSymbolicWithoutRepetition);
+    // if we just returning an intermediate result, don't 
+    if (newSymbolicWithoutRepetition.op() != VAR_MATRIX) {
+        newIntermediateNodes.push_back(newSymbolicWithoutRepetition);
+    }
     return newIntermediateNodes;
 }
 
