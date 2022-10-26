@@ -213,7 +213,8 @@ private:
     void compileCode(const std::string& code, const std::string& suffix = "");
     std::vector<ComputeUnit<RealT>> matrixExecutionUnits;
     std::string codeFileSuffix;
-    std::vector<std::vector<RealT>> inputOutputDatas;
+    std::vector<std::vector<RealT>> outputDatas;
+    int inputMatrixCounts = 0;
 
 public:
     ~ComputeUnit();
@@ -234,6 +235,9 @@ public:
         init();
     }
 
+    ComputeUnit(Device device_, const std::vector<Eigen::SparseMatrix<Symbolic>>& m) {
+        setExpressions(0, m);
+    }
     // ComputeUnit& execute(const std::vector<Eigen::SparseMatrix<double>>& expressions){
 
     // }
@@ -244,23 +248,24 @@ public:
         setArgs(0, expressions...);
         if (runFunc) runFunc();
         return *this;
-        // } else {
-        //     executeMatrix(expressions...);
-        //     return *this;
-        // }
     }
 
     template<class ...TArg>
     ComputeUnit& executeMatrix(const TArg& ... expressions) {
         matrixExecutionUnits[0].execute(expressions...);
-        matrixExecutionUnits[0].getResults(inputOutputDatas[1]);
-        double res = 0;
-        for (int i = 0; i < inputOutputDatas[1].size(); i++) {
-            res += inputOutputDatas[1][i];
+        for (int i = 1; i < matrixExecutionUnits.size(); i++) {
+            // get the last result
+            matrixExecutionUnits[i - 1].getResults(outputDatas[i - 1]);
+            matrixExecutionUnits[i].setArgs(0, expressions...);
+            for (int j = 0; j < i; j++) {
+                matrixExecutionUnits[i].setArgFunc(outputDatas[j].data(), inputMatrixCounts + j);
+            }
+            // run function now
+            matrixExecutionUnits[i].runFunc();
+            // get the result
+
         }
-        std::cout << inputOutputDatas[1].size() << std::endl;
-        std::cout << "Res: " << res << std::endl;
-        // matrixExecutionUnits[0].runFunc();
+        // double res = 0;
         return *this;
     }
 
@@ -272,7 +277,11 @@ public:
 
     template<class ...TArg>
     ComputeUnit& getResults(TArg& ... expressions) {
-        getRes(0, expressions...);
+        if (matrixExecutionUnits.size() == 0) {
+            getRes(0, expressions...);
+        } else {
+            matrixExecutionUnits[matrixExecutionUnits.size() - 1].getResults(expressions...);
+        }
         return *this;
     }
 };

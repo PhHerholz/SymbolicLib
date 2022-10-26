@@ -516,7 +516,7 @@ void ComputeUnit<RealT>::initMatrix() {
     // multiplication is not communitive.
     // However, now think about A * A * (A * A)^T, what shall we do here?
     // ideally we also want to extract A * A, and that's the hard part
-
+    Timer t;
     assert(outputExpressionsMatrix.size() > 0);
     SymbolicMatrix symbolicMatrixRepresentation = outputExpressionsMatrix[0];
     vector<SymbolicMatrix> simplifiedResult = findRepetition(outputExpressionsMatrix[0]);
@@ -524,7 +524,8 @@ void ComputeUnit<RealT>::initMatrix() {
     for (int i = 0; i < simplifiedResult.size(); i++) {
         cout << simplifiedResult[i].toString() << endl;
     }
-    set<int> inputMatrixCountIDs;
+    t.printTime("Factorized to smaller expressions");
+    set<int> inputMatrixIDs;
     set<int> intermediateMatrixIDs;
     vector<SparseMatrix<Symbolic>> inputMatrices;
     for (int i = 0; i < simplifiedResult.size(); i++) {
@@ -532,7 +533,7 @@ void ComputeUnit<RealT>::initMatrix() {
             if (x.op() == VAR_MATRIX) {
                 int id = x.matrixID();
                 if (id >= 0) {
-                    inputMatrixCountIDs.insert(id);
+                    inputMatrixIDs.insert(id);
                     if (id + 1 > inputMatrices.size()) {
                         inputMatrices.resize(id + 1);
                     }
@@ -545,15 +546,18 @@ void ComputeUnit<RealT>::initMatrix() {
             }
             });
     }
-    cout << "Input has " << inputMatrixCountIDs.size() << " matrices" << endl;
+    inputMatrixCounts = inputMatrixIDs.size();
+    cout << "Input has " << inputMatrixIDs.size() << " matrices" << endl;
     cout << "There are " << intermediateMatrixIDs.size() << " intermediate matrices" << endl;
+    t.printTime("Checking inputs and outputs");
     // vector<SparseMatrix<Symbolic>> intermediateResults;
     for (int i = 0; i < simplifiedResult.size(); i++) {
         // compute the actual sparsity and the tree for each non-zero element
-        SparseMatrix<Symbolic> re = materializeSymbolicMatrix(simplifiedResult[i], inputMatrices, inputMatrixCountIDs.size());
+        SparseMatrix<Symbolic> re = materializeSymbolicMatrix(simplifiedResult[i], inputMatrices, inputMatrixIDs.size());
+        // t.printTime("Symbolic execution");
         // this is a new input matrix, we might use it later
         inputMatrices.push_back(re);
-        // initialize a unit
+        // initialize a unit later on
         matrixExecutionUnits.push_back(ComputeUnit<RealT>(device, inputMatrices));
         // now that we had the sparsity, we want to make it an input matrix
         // so in first iteration, we generate a matrix, and if the input has 2 matrices
@@ -561,17 +565,25 @@ void ComputeUnit<RealT>::initMatrix() {
         for (int j = 0; j < inputMatrices[inputMatrices.size() - 1].nonZeros(); j++) {
             inputMatrices[inputMatrices.size() - 1].valuePtr()[j] = Symbolic(j, (int)inputMatrices.size() - 1);
         }
-        cout << "Intermediate " << i << " has " << inputMatrices[inputMatrices.size() - 1].nonZeros() << " nonzeros." << endl;
     }
+    t.printTime("All symbolic computations");
+    for (int i = 0; i < matrixExecutionUnits.size(); i++){
+        matrixExecutionUnits[i].init();
+        t.printTime("Unit initialization");
+    }
+    // t.printTime("All unit initializations");
     for (int i = 0; i < simplifiedResult.size(); i++) {
         matrixExecutionUnits[i].compile(to_string(i));
+        t.printTime("Compile file");
     }
-    cout << "Finished compiling" << endl;
-    inputOutputDatas.resize(inputMatrices.size());
-    for (int i = 0; i < inputMatrices.size(); i++) {
-        inputOutputDatas[i].resize(inputMatrices[i].nonZeros());
+    // t.printTime("Compiled");
+    // cout << "Finished compiling" << endl;
+    outputDatas.resize(inputMatrices.size() - inputMatrixIDs.size());
+    for (int i = 0; i < inputMatrices.size() - inputMatrixIDs.size(); i++) {
+        outputDatas[i].resize(inputMatrices[i + inputMatrixIDs.size()].nonZeros());
     }
-    cout << "Finished setting nonzero elements" << endl;
+    t.printTime("Setting space for intermediates");
+    cout << "Finished setting nonzero elements for intermediate values" << endl;
 }
 
 template <class RealT>
