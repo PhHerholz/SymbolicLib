@@ -11,7 +11,7 @@ namespace Sym {
 void preOrderTraverse(const Symbolic& x, std::function<bool(const Symbolic&)> fun, const bool unique) {
 
     std::unordered_set<long long> visited;
-    static std::vector<const Symbolic*> exprStack;
+    std::vector<const Symbolic*> exprStack;
     const auto size0 = exprStack.size();
     exprStack.push_back(&x);
 
@@ -39,7 +39,7 @@ void preOrderTraverse(const Symbolic& x, std::function<bool(const Symbolic&)> fu
 void prePostOrderTraverse(const Symbolic& x, std::function<bool(const Symbolic&)> preFun, std::function<void(const Symbolic&)> postFun) {
 
     if (!preFun(x)) return;
-    static vector<pair<const Symbolic*, unsigned int>> stack;
+    vector<pair<const Symbolic*, unsigned int>> stack;
 
     const auto size0 = stack.size();
     stack.push_back(make_pair(&x, 0));
@@ -79,7 +79,7 @@ std::vector<Symbolic> harvestOp(OpType op, const Symbolic& x) {
 void preOrderTraverse(const SymbolicMatrix& x, std::function<bool(const SymbolicMatrix&)> fun, const bool unique) {
 
     std::unordered_set<long long> visited;
-    static std::vector<const SymbolicMatrix*> exprStack;
+    std::vector<const SymbolicMatrix*> exprStack;
     const auto size0 = exprStack.size();
     exprStack.push_back(&x);
 
@@ -107,7 +107,7 @@ void preOrderTraverse(const SymbolicMatrix& x, std::function<bool(const Symbolic
 void prePostOrderTraverse(const SymbolicMatrix& x, std::function<bool(const SymbolicMatrix&)> preFun, std::function<void(const SymbolicMatrix&)> postFun) {
 
     if (!preFun(x)) return;
-    static vector<pair<const SymbolicMatrix*, unsigned int>> stack;
+    vector<pair<const SymbolicMatrix*, unsigned int>> stack;
 
     const auto size0 = stack.size();
     stack.push_back(make_pair(&x, 0));
