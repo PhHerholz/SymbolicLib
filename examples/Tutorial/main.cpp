@@ -11,6 +11,7 @@
 #include "../../src/support/ComputeUnitAvailability.h"
 #include "../../src/matrix/SymbolicMatrix.hpp"
 #include "../dataPath.hpp"
+#include "../../src/support/Timer.hpp"
 
 int main(int argc, char* argv[]) {
     using namespace std;
@@ -20,7 +21,7 @@ int main(int argc, char* argv[]) {
     // We start by creating two variables. Variables have two parameters, a variable id and a variable group.
     Symbolic a(0, 0);
     Symbolic b(1, 0);
-
+    Timer t;
     // Symbolic instances can be combined using mathematical operations
     Symbolic c = a + b * sqrt(a * b);
 
@@ -36,38 +37,56 @@ int main(int argc, char* argv[]) {
     // Let us consider a more complex example: multiplying a matrix with itself.
     Eigen::SparseMatrix<double> A;
     Eigen::loadMarket(A, filePath() + "/sphere.mtx");
-    A *= 200000;
-    Eigen::SparseMatrix<double> C = A * 1000000;
+    A /= 100000;
+    Eigen::SparseMatrix<double> C = A * 2;
+    Eigen::SparseMatrix<double> res1 = A * A * A * A + C * C * A * C * C;
+    t.reset();
+    for (int i = 0; i < 100; i++) {
+        res1 = A * A * A * A + C * C * A * C * C;
+    }
+    t.printTime("Eigen 100");
+
     double res_value = 0;
-    Eigen::SparseMatrix<double> res1 = A * A;
-    std::cout << res1.nonZeros() << std::endl;
     for (int i = 0; i < res1.nonZeros(); i++) {
-        res_value += res1.valuePtr()[i];
+        res_value += res1.valuePtr()[i] * res1.valuePtr()[i];
     }
     std::cout << "True result: " << res_value << std::endl;
-    // Eigen::SparseMatrix<double> res2 = res1 * A;
-    // Eigen::SparseMatrix<double> res3 = res1 * res1 + res2 + res2 * A;
 
     // The function 'makeSymbolic' builds a copy of the sparse matrix 'A' and replaces each value with a variable of group 0.
     Eigen::SparseMatrix<Symbolic> AS = makeSymbolic(A, 0);
     SymbolicMatrix AM = SymbolicMatrix(A, 0);
     SymbolicMatrix CM = SymbolicMatrix(C, 1);
-    SymbolicMatrix BM = AM * AM;
-    // cout << BM.toString() << endl;
+    SymbolicMatrix BM = AM * AM * AM * AM + CM * CM * AM * CM * CM;
+    t.reset();
     ComputeUnit<double> unit2(Device(VecWidth(4), NumThreads(8)), BM);
-    // res_value = 0;
-    // for (int i = 0; i < A.nonZeros(); i++) {
-    //     res_value += A.valuePtr()[i];
-    // }
-    // std::cout << "True result: " << res_value << std::endl;
-    unit2.executeMatrix(A);
-    // cout << res1.nonZeros() << endl;
-    // cout << res2.nonZeros() << endl;
-    // cout << res3.nonZeros() << endl;
+    t.printTime("Symbolic matrix symbolic execution and compilation");
+    unit2.executeMatrix(A, C);
+    t.reset();
+    for (int i = 0; i < 100; i++) {
+        unit2.executeMatrix(A, C);
+    }
+    t.printTime("Symbolic Matrix execution");
+    std::vector<double> symbolicMatrixResults(res1.nonZeros());
+    unit2.getResults(symbolicMatrixResults);
 
+    res_value = 0;
+    for (int i = 0; i < symbolicMatrixResults.size(); i++) {
+        res_value += symbolicMatrixResults[i] * symbolicMatrixResults[i];
+    }
+    std::cout << "Symbolic Matrix Results: " << res_value << std::endl;
+    res_value = 0;
+    for (int i = 0; i < symbolicMatrixResults.size(); i++) {
+        double diff = symbolicMatrixResults[i] - res1.valuePtr()[i];
+        if (diff * diff >= 1) {
+            cout << symbolicMatrixResults[i] << " " << res1.valuePtr()[i] << " " << diff << endl;
+        }
+        res_value += diff * diff;
+    }
+    std::cout << "Diff: " << res_value << std::endl;
 
     // The symbolic matrix BS stores symbolic expressions for each entry
-    Eigen::SparseMatrix<Symbolic> BS = AS * AS;
+    Eigen::SparseMatrix<Symbolic> CS = makeSymbolic(A, 1);
+    Eigen::SparseMatrix<Symbolic> BS = AS * AS * AS * AS;
 
     // We want to compile a program that evaluates the expression. Compute unit defines such a program; the first parameter
     // requests a vectorized program using 256 AVX2 registers holding 4 doubles. 'NumThreads(8)' defines a parallelized implementation
@@ -75,10 +94,18 @@ int main(int argc, char* argv[]) {
     ComputeUnit<double> unit(Device(VecWidth(4), NumThreads(8)), AS, BS);
 
     // Compile, link and execture the program using the numeric values contained in A.
-    unit.compile("abc").execute(A);
+    t.reset();
+    unit.compile("abc");
+    t.printTime("Compiling");
+    unit.execute(A);
+    t.reset();
+    for (int i = 0; i < 100; i++) {
+        unit.execute(A);
+    }
+    t.printTime("Symbolic type 100 executions");
 
     // Retrieve the result and compare to a reverence solution
-    Eigen::SparseMatrix<double> B = A * A;
+    Eigen::SparseMatrix<double> B = A * A * A * A;
     Eigen::SparseMatrix<double> B2 = 0. * B;
 
     unit.getResults(B2);
