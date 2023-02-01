@@ -37,20 +37,14 @@ int main(int argc, char* argv[]) {
     // Let us consider a more complex example: multiplying a matrix with itself.
     Eigen::SparseMatrix<double> A;
     Eigen::loadMarket(A, filePath() + "/sphere.mtx");
-    A /= 100000;
     Eigen::SparseMatrix<double> C = A * 2;
     Eigen::SparseMatrix<double> res1 = A * A * A * A + C * C * A * C * C;
     t.reset();
     for (int i = 0; i < 100; i++) {
         res1 = A * A * A * A + C * C * A * C * C;
     }
-    t.printTime("Eigen 100");
+    t.printTime("Eigen execution for 100 times");
 
-    double res_value = 0;
-    for (int i = 0; i < res1.nonZeros(); i++) {
-        res_value += res1.valuePtr()[i] * res1.valuePtr()[i];
-    }
-    std::cout << "True result: " << res_value << std::endl;
 
     // The function 'makeSymbolic' builds a copy of the sparse matrix 'A' and replaces each value with a variable of group 0.
     Eigen::SparseMatrix<Symbolic> AS = makeSymbolic(A, 0);
@@ -65,21 +59,13 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < 100; i++) {
         unit2.executeMatrix(A, C);
     }
-    t.printTime("Symbolic Matrix execution");
+    t.printTime("Symbolic Matrix execution for 100 times");
     std::vector<double> symbolicMatrixResults(res1.nonZeros());
     unit2.getResults(symbolicMatrixResults);
 
-    res_value = 0;
-    for (int i = 0; i < symbolicMatrixResults.size(); i++) {
-        res_value += symbolicMatrixResults[i] * symbolicMatrixResults[i];
-    }
-    std::cout << "Symbolic Matrix Results: " << res_value << std::endl;
-    res_value = 0;
+    double res_value = 0;
     for (int i = 0; i < symbolicMatrixResults.size(); i++) {
         double diff = symbolicMatrixResults[i] - res1.valuePtr()[i];
-        if (diff * diff >= 1) {
-            cout << symbolicMatrixResults[i] << " " << res1.valuePtr()[i] << " " << diff << endl;
-        }
         res_value += diff * diff;
     }
     std::cout << "Diff: " << res_value << std::endl;

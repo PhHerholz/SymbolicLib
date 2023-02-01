@@ -522,13 +522,14 @@ void ComputeUnit<RealT>::initMatrix() {
     // However, now think about A * A * (A * A)^T, what shall we do here?
     // ideally we also want to extract A * A, and that's the hard part
     Timer t;
+    Timer::silence();
     assert(outputExpressionsMatrix.size() > 0);
     SymbolicMatrix symbolicMatrixRepresentation = outputExpressionsMatrix[0];
     vector<SymbolicMatrix> simplifiedResult = findRepetition(outputExpressionsMatrix[0]);
-    cout << "Final execution orders: " << endl;
-    for (int i = 0; i < simplifiedResult.size(); i++) {
-        cout << simplifiedResult[i].toString() << endl;
-    }
+    // cout << "Final execution orders: " << endl;
+    // for (int i = 0; i < simplifiedResult.size(); i++) {
+    //     cout << simplifiedResult[i].toString() << endl;
+    // }
     t.printTime("Factorized to smaller expressions");
     set<int> inputMatrixIDs;
     set<int> intermediateMatrixIDs;
@@ -552,8 +553,8 @@ void ComputeUnit<RealT>::initMatrix() {
             });
     }
     inputMatrixCounts = inputMatrixIDs.size();
-    cout << "Input has " << inputMatrixIDs.size() << " matrices" << endl;
-    cout << "There are " << intermediateMatrixIDs.size() << " intermediate matrices" << endl;
+    // cout << "Input has " << inputMatrixIDs.size() << " matrices" << endl;
+    // cout << "There are " << intermediateMatrixIDs.size() << " intermediate matrices" << endl;
     t.printTime("Checking inputs and outputs");
     // vector<SparseMatrix<Symbolic>> intermediateResults;
     for (int i = 0; i < simplifiedResult.size(); i++) {
@@ -588,7 +589,8 @@ void ComputeUnit<RealT>::initMatrix() {
         outputDatas[i].resize(inputMatrices[i + inputMatrixIDs.size()].nonZeros());
     }
     t.printTime("Setting space for intermediates");
-    cout << "Finished setting nonzero elements for intermediate values" << endl;
+    // cout << "Finished setting nonzero elements for intermediate values" << endl;
+    Timer::unsilence();
 }
 
 template <class RealT>
