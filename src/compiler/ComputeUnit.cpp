@@ -132,7 +132,12 @@ void ComputeUnit<RealT>::compileCode(const string& code, const string& suffix)
         if (device.numThreads > 1)
         {
 #ifdef __APPLE__
+            cmd += format(" -DNUMTHREADS=% -Xclang -std=c++17 -arch arm64 -L/opt/homebrew/opt/libomp/lib -Wl,-rpath,/opt/intel/lib -lomp -I/opt/homebrew/opt/libomp/include", device.numThreads);
+#ifdef __aarch64__
             cmd += format(" -DNUMTHREADS=% -Xclang -fopenmp -L/usr/local/opt/libomp/lib -Wl,-rpath,/opt/intel/lib -lomp", device.numThreads);
+#else
+            cmd += format(" -DNUMTHREADS=% -Xclang -fopenmp -L/usr/local/opt/libomp/lib -Wl,-rpath,/opt/intel/lib -lomp", device.numThreads);
+#endif
 #else
             cmd += format(" -DNUMTHREADS=% -fopenmp -I/opt/rocm/llvm/include -L/opt/rocm/llvm/lib -Wl,-rpath,/opt/rocm/llvm/lib -liomp5", device.numThreads);
             //  cmd += format(" -DNUMTHREADS=% -fopenmp", device.numThreads);
@@ -567,7 +572,7 @@ void ComputeUnit<RealT>::initMatrix() {
         }
     }
     t.printTime("All symbolic computations");
-    for (int i = 0; i < matrixExecutionUnits.size(); i++){
+    for (int i = 0; i < matrixExecutionUnits.size(); i++) {
         matrixExecutionUnits[i].init();
         t.printTime("Unit initialization");
     }
