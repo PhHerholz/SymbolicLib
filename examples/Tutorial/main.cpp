@@ -37,11 +37,12 @@ int main(int argc, char* argv[]) {
     // Let us consider a more complex example: multiplying a matrix with itself.
     Eigen::SparseMatrix<double> A;
     Eigen::loadMarket(A, filePath() + "/la2010.mtx");
+    A /= 10000;
     Eigen::SparseMatrix<double> C = A * 2;
-    Eigen::SparseMatrix<double> res1 = A * A * A ;
+    Eigen::SparseMatrix<double> res1 = A * A * A * A + C * C * A * C * C;
     t.reset();
     for (int i = 0; i < 100; i++) {
-        res1 = A * A * A ;
+        res1 = A * A * A * A + C * C * A * C * C;
     }
     t.printTime("Eigen execution for 100 times");
 
@@ -50,14 +51,14 @@ int main(int argc, char* argv[]) {
     Eigen::SparseMatrix<Symbolic> AS = makeSymbolic(A, 0);
     SymbolicMatrix AM = SymbolicMatrix(A, 0);
     SymbolicMatrix CM = SymbolicMatrix(C, 1);
-    SymbolicMatrix BM = AM * AM * AM ;
+    SymbolicMatrix BM = AM * AM * AM * AM + CM * CM * AM * CM * CM;
     t.reset();
-    ComputeUnit<double> unit2(Device(VecWidth(4), NumThreads(1)), BM);
+    ComputeUnit<double> unit2(Device(VecWidth(4), NumThreads(2)), BM);
     t.printTime("Symbolic matrix symbolic execution and compilation");
-    unit2.executeMatrix(A);
+    unit2.executeMatrix(A, C);
     t.reset();
     for (int i = 0; i < 100; i++) {
-        unit2.executeMatrix(A);
+        unit2.executeMatrix(A, C);
     }
     t.printTime("Symbolic Matrix execution for 100 times");
     std::vector<double> symbolicMatrixResults(res1.nonZeros());
@@ -71,13 +72,13 @@ int main(int argc, char* argv[]) {
     std::cout << "Diff: " << res_value << std::endl;
 
     // The symbolic matrix BS stores symbolic expressions for each entry
-    Eigen::SparseMatrix<Symbolic> CS = makeSymbolic(A, 0);
+    Eigen::SparseMatrix<Symbolic> CS = makeSymbolic(A, 1);
     Eigen::SparseMatrix<Symbolic> BS = AS * AS;
 
     // We want to compile a program that evaluates the expression. Compute unit defines such a program; the first parameter
     // requests a vectorized program using 256 AVX2 registers holding 4 doubles. 'NumThreads(8)' defines a parallelized implementation
     // using 8 threads. The next two parameters define the input variables of the program (AS) and the expression to be evaluated (BS).
-    ComputeUnit<double> unit(Device(VecWidth(4), NumThreads(12)), AS, BS);
+    ComputeUnit<double> unit(Device(VecWidth(4), NumThreads(8)), AS, BS);
 
     // Compile, link and execture the program using the numeric values contained in A.
     t.reset();
@@ -95,7 +96,6 @@ int main(int argc, char* argv[]) {
     Eigen::SparseMatrix<double> B2 = 0. * B;
 
     unit.getResults(B2);
-    res_value = 0;
     unit.close(); // Unlink the generated library
 
     cout << "difference: " << (B - B2).norm() << endl;
