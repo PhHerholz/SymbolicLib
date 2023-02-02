@@ -132,9 +132,8 @@ void ComputeUnit<RealT>::compileCode(const string& code, const string& suffix)
         if (device.numThreads > 1)
         {
 #ifdef __APPLE__
-            cmd += format(" -DNUMTHREADS=% -Xclang -std=c++17 -arch arm64 -L/opt/homebrew/opt/libomp/lib -Wl,-rpath,/opt/intel/lib -lomp -I/opt/homebrew/opt/libomp/include", device.numThreads);
 #ifdef __aarch64__
-            cmd += format(" -DNUMTHREADS=% -Xclang -fopenmp -L/usr/local/opt/libomp/lib -Wl,-rpath,/opt/intel/lib -lomp", device.numThreads);
+            cmd += format(" -DNUMTHREADS=% -Xclang -fopenmp -std=c++17 -arch arm64 -L/opt/homebrew/opt/libomp/lib -Wl,-rpath,/opt/intel/lib -lomp -I/opt/homebrew/opt/libomp/include -lomp", device.numThreads);
 #else
             cmd += format(" -DNUMTHREADS=% -Xclang -fopenmp -L/usr/local/opt/libomp/lib -Wl,-rpath,/opt/intel/lib -lomp", device.numThreads);
 #endif

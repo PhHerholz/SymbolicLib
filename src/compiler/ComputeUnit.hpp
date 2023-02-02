@@ -235,7 +235,7 @@ public:
         init();
     }
 
-    ComputeUnit(Device device_, const std::vector<Eigen::SparseMatrix<Symbolic>>& m) {
+    ComputeUnit(Device device_, const std::vector<Eigen::SparseMatrix<Symbolic>>& m):device(device_) {
         setExpressions(0, m);
     }
     // ComputeUnit& execute(const std::vector<Eigen::SparseMatrix<double>>& expressions){
