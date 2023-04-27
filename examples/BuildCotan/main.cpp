@@ -14,109 +14,317 @@
 #include "../dataPath.hpp"
 
 using namespace std;
-
-template <class TNum>
-void buildMass(Eigen::Matrix<TNum, -1, -1>& V, Eigen::MatrixXi& F, Eigen::SparseMatrix<TNum>& M)
+struct SymIndex
 {
-    M.resize(V.rows(), V.rows());
-    M.setIdentity();
-    for (int i = 0; i < V.rows(); ++i)
-        M.diagonal()[i] = .0;
+  int index;
+  int pattern;
+};
 
-    for (int i = 0; i < F.rows(); ++i)
-    {
-        Eigen::Matrix<TNum, 3, 1> e0 = V.row(F(i, 1)) - V.row(F(i, 0));
-        Eigen::Matrix<TNum, 3, 1> e1 = V.row(F(i, 2)) - V.row(F(i, 0));
-
-        TNum area = e0.cross(e1).norm() / 6;
-
-        M.diagonal()(F(i, 0)) += area;
-        M.diagonal()(F(i, 1)) += area;
-        M.diagonal()(F(i, 2)) += area;
+inline int convertAccessPatternToUniqueID(const std::vector<int>& pos, int size) {
+  // find the unique orientation id
+  std::vector<int> positions;
+  std::vector<int> positionsAfterErasure;
+  for (int i = 0; i < size; i++) {
+    positions.push_back(i);
+  }
+  for (int i = 0; i < pos.size(); i++) {
+    int p = pos[i];
+    for (int j = 0; j < positions.size(); j++) {
+      if (positions[j] == p) {
+        positionsAfterErasure.push_back(j);
+        positions.erase(positions.begin() + j);
+        break;
+      }
     }
+  }
+  // now we just neeed to compute the unique id from those positions
+  int id = 0;
+  for (int i = 0; i < pos.size(); i++) {
+    int p = positionsAfterErasure[i];
+    int length = 1;
+    for (int j = 0; j < pos.size() - i - 1; j++) {
+      length *= size - j - 1 - i;
+    }
+    if (length <= 0) {
+      length = 1;
+    }
+    id += length * p;
+  }
+  return id;
 }
 
+
 template <class TNum>
-std::array<long, 2> buildCotan(Eigen::Matrix<TNum, -1, -1>& V, Eigen::MatrixXi& F, Eigen::SparseMatrix<TNum>& L, Eigen::SparseMatrix<TNum>& M)
+std::array<long, 2> buildCotan(Eigen::Matrix < TNum, -1, -1 > & V, Eigen::MatrixXi& F, Eigen::SparseMatrix<TNum>& L, Eigen::SparseMatrix<TNum>& M)
 {
-    std::array<long, 2> ret;
+  std::array<long, 2> ret;
 
-    std::vector<Eigen::Triplet<TNum>> triplets;
-    triplets.reserve(F.rows() * 12);
+  std::vector<Eigen::Triplet<TNum>> triplets;
+  triplets.reserve(F.rows() * 12);
 
-    buildMass(V, F, M);
+  // buildMass(V, F, M);
 
-    for (int i = 0; i < F.rows(); ++i)
+  for (int i = 0; i < F.rows(); ++i)
+  {
+    Eigen::Matrix<TNum, 3, 1> e0 = V.row(F(i, 0)) - V.row(F(i, 1));
+    Eigen::Matrix<TNum, 3, 1> e1 = V.row(F(i, 0)) - V.row(F(i, 2));
+    const auto a = e0.cross(e1).norm();
+
+    for (int j = 0; j < 3; ++j)
     {
-        Eigen::Matrix<TNum, 3, 1> e0 = V.row(F(i, 0)) - V.row(F(i, 1));
-        Eigen::Matrix<TNum, 3, 1> e1 = V.row(F(i, 0)) - V.row(F(i, 2));
-        const auto a = e0.cross(e1).norm();
+      const int j1 = F(i, (j + 1) % 3);
+      const int j2 = F(i, (j + 2) % 3);
 
-        for (int j = 0; j < 3; ++j)
-        {
-            const int j1 = F(i, (j + 1) % 3);
-            const int j2 = F(i, (j + 2) % 3);
+      Eigen::Matrix<TNum, 3, 1> e0 = V.row(F(i, j)) - V.row(j1);
+      Eigen::Matrix<TNum, 3, 1> e1 = V.row(F(i, j)) - V.row(j2);
 
-            Eigen::Matrix<TNum, 3, 1> e0 = V.row(F(i, j)) - V.row(j1);
-            Eigen::Matrix<TNum, 3, 1> e1 = V.row(F(i, j)) - V.row(j2);
+      TNum w = e0.dot(e1) / a / 2.0 - 1.0;
 
-            TNum w = e0.dot(e1) / a;
-
-            triplets.emplace_back(j1, j1, -w);
-            triplets.emplace_back(j2, j2, -w);
-            triplets.emplace_back(j1, j2, w);
-            triplets.emplace_back(j2, j1, w);
-        }
+      triplets.emplace_back(j1, j1, -w); // a node value is updated
+      triplets.emplace_back(j2, j2, -w); // a node value is updated
+      triplets.emplace_back(j1, j2, w); // an edge value is updated
+      triplets.emplace_back(j2, j1, w); // an edge value
     }
+  }
 
-    L.resize(V.rows(), V.rows());
-    L.setFromTriplets(triplets.begin(), triplets.end());
+  L.resize(V.rows(), V.rows());
+  L.setFromTriplets(triplets.begin(), triplets.end());
+  for (int i = 0; i < V.rows(); ++i)
+  {
+    L.coeffRef(i, i) += 1.0;
+  }
 
-    return ret;
+  return ret;
 }
 
 int main(int argc, char* argv[])
 {
 
-    using namespace Sym;
+  using namespace Sym;
+  std::string meshFile = filePath() + "/cloth4.off";
+  ;
 
-    std::string meshFile = filePath() + "/d5k.off";
-    ;
+  Eigen::MatrixXi F;
+  Eigen::MatrixXd V;
+  igl::read_triangle_mesh(meshFile, V, F);
 
-    Eigen::MatrixXi F;
-    Eigen::MatrixXd V;
-    igl::read_triangle_mesh(meshFile, V, F);
+  // initializaiton of our stuffs
+  std::vector<std::vector<SymIndex>> FACE;
+  std::map<int, std::map<int, std::map<int, int>>> edge_to_face_map; // for each starting vertex, for each ending vertex, what is the triangle id and its pattern
+  FACE.reserve(F.rows());
+  for (int i = 0; i < F.rows(); i++) {
+    std::vector<SymIndex> row;
+    for (int j = 0; j < 3; j++) {
+      row.push_back({F(i, j), -1});
+    }
+    FACE.push_back(row);
+  }
+  for (int i = 0; i < F.rows(); i++) {
+    for (int j = 0; j < 3; j++) {
+      for (int k = j + 1; k < 3; k++) {
+        std::vector<int> access_pattern = {j, k};
+        int v0 = F(i, j);
+        int v1 = F(i, k);
+        if (v0 > v1) {
+          int v2 = v0;
+          v0 = v1;
+          v1 = v2;
+          access_pattern = {k, j};
+        }
+        if (edge_to_face_map.find(v0) == edge_to_face_map.end()) {
+          edge_to_face_map[v0] = {};
+        }
+        if (edge_to_face_map[v0].find(v1) == edge_to_face_map[v0].end()) {
+          edge_to_face_map[v0][v1] = {};
+        }
+        if (edge_to_face_map[v0][v1].find(i) == edge_to_face_map[v0][v1].end()) {
+          int ap = convertAccessPatternToUniqueID(access_pattern, 3);
+          edge_to_face_map[v0][v1][i] = ap;
+        }
+      }
+    }
+  }
 
-    Eigen::SparseMatrix<double> L, L2, M, M2;
-    Timer t;
-    buildCotan(V, F, L, M);
-    t.printTime("buildCotan direct");
+  // initialize V2F
+  std::vector<std::vector<SymIndex>> V2F(V.rows());
+  for (int i = 0; i < F.rows(); i++) {
+    for (int j = 0; j < 3; j++) {
+      V2F[F(i, j)].push_back({i, j});
+    }
+  }
+  // initialize EDGE and E2F
+  std::vector<std::vector<SymIndex>> EDGE;
+  std::vector<std::vector<SymIndex>> E2F;
+  for (auto const& [v0, v1_map] : edge_to_face_map) {
+    for (auto const& [v1, face_map] : v1_map) {
+      EDGE.push_back({{v0, -1}, {v1, -1}});
+      std::vector<SymIndex> face_and_patterns;
+      for (auto const& [face_id, access_pattern] : face_map) {
+        face_and_patterns.push_back({face_id, access_pattern});
+      }
+      E2F.push_back(face_and_patterns);
+    }
+  }
+  // std::cout << "Finished initialization\n";
 
-    M2 = M;
-    L2 = L;
-    fill_n(L2.valuePtr(), L2.nonZeros(), .0);
-    fill_n(M2.valuePtr(), M2.nonZeros(), .0);
+  ;
+  Eigen::MatrixXd VERTEX_POSITIONS = V;
+  // end initialization
 
-    auto Vs = Sym::makeSymbolic(V, 0);
-    Eigen::SparseMatrix<Sym::Symbolic> Ls, Ms;
+  Eigen::SparseMatrix<double> L, L2, M, M2;
+  Timer t;
+  buildCotan(V, F, L, M);
+  t.printTime("buildCotan direct");
 
-    t.reset();
-    buildCotan(Vs, F, Ls, Ls);
-    t.printTime("build cotan");
+  // technically this is also initialization
+  Eigen::SparseMatrix<double> L3;
+  L3.resize(V.rows(), V.rows());
+  L3 = L;
 
-    Sym::ComputeUnit<double> unit(Device(VecWidth(4), NumThreads(8)), Vs, Ls);
-    t.printTime("build");
+  std::vector<std::vector<int>> VARYING_INPUT;
+  VARYING_INPUT = {{2, 0, 2, 1, 2, 0, 2, 1, 2, 0, 2, 1},
+    {2, 0, 2, 1, 2, 0, 2, 1, 2, 0, 2, 1},
+    {1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0}
+  };
+  std::vector<std::vector<double>> VARYING_STORAGE_ACCESS_0;
+  for (int i = 0; i < FACE.size(); i++) {
+    VARYING_STORAGE_ACCESS_0.push_back(std::vector<double>(VARYING_INPUT.size()));
+  }
+  for (int i = 0; i < FACE.size(); i++) {
+    std::vector<int> INPUT_LEVEL_0 = {i};
+    std::vector<SymIndex> INPUT_LEVEL_1 = FACE[INPUT_LEVEL_0[0]];
+    for (int j = 0; j < VARYING_INPUT.size(); j++) {
+      int pattern = j;
+      double result = 0;
+      {
+        result = (((VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][0]].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][1]].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][2]].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][3]].index, 0)))) + ((VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][4]].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][5]].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][6]].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][7]].index, 2)))) + ((VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][8]].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][9]].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][10]].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][11]].index, 1)))));
+      }
+      VARYING_STORAGE_ACCESS_0[i][j] = result;
+    }
+  }
 
-    unit.compile();
-    t.printTime("compile");
+  VARYING_INPUT = {{1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0},
+    {0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2},
+    {0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2}
+  };
+  std::vector<std::vector<double>> VARYING_STORAGE_ACCESS_1;
+  for (int i = 0; i < FACE.size(); i++) {
+    VARYING_STORAGE_ACCESS_1.push_back(std::vector<double>(VARYING_INPUT.size()));
+  }
+  for (int i = 0; i < FACE.size(); i++) {
+    std::vector<int> INPUT_LEVEL_0 = {i};
+    std::vector<SymIndex> INPUT_LEVEL_1 = FACE[INPUT_LEVEL_0[0]];
+    for (int j = 0; j < VARYING_INPUT.size(); j++) {
+      int pattern = j;
+      double result = 0;
+      {
+        result = (((VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][0]].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][1]].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][2]].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][3]].index, 0)))) + ((VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][4]].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][5]].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][6]].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][7]].index, 2)))) + ((VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][8]].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][9]].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][10]].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][11]].index, 1)))));
+      }
+      VARYING_STORAGE_ACCESS_1[i][j] = result;
+    }
+  }
 
-    unit.execute(V);
-    t.printTime("execute");
+  VARYING_INPUT = {{2, 0, 2, 1, 2, 0, 2, 1, 2, 0, 2, 1},
+    {1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0},
+    {2, 0, 2, 1, 2, 0, 2, 1, 2, 0, 2, 1},
+    {0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2},
+    {1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0},
+    {0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2}
+  };
+  std::vector<std::vector<double>> VARYING_STORAGE_ACCESS_2;
+  for (int i = 0; i < FACE.size(); i++) {
+    VARYING_STORAGE_ACCESS_2.push_back(std::vector<double>(VARYING_INPUT.size()));
+  }
+  for (int i = 0; i < FACE.size(); i++) {
+    std::vector<int> INPUT_LEVEL_0 = {i};
+    std::vector<SymIndex> INPUT_LEVEL_1 = FACE[INPUT_LEVEL_0[0]];
+    for (int j = 0; j < VARYING_INPUT.size(); j++) {
+      int pattern = j;
+      double result = 0;
+      {
+        result = (((VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][0]].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][1]].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][2]].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][3]].index, 0)))) + ((VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][4]].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][5]].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][6]].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][7]].index, 2)))) + ((VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][8]].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][9]].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][10]].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[VARYING_INPUT[pattern][11]].index, 1)))));
+      }
+      VARYING_STORAGE_ACCESS_2[i][j] = result;
+    }
+  }
 
-    unit.getResults(L2);
 
-    std::cout << "residual: " << squaredError(L, L2) << endl;
-    printDifferences(L, L2, 1e-8);
+  std::vector<double> FIXED_STORAGE_ACCESS_0(FACE.size());
+  for (int i = 0; i < FACE.size(); i++) {
+    std::vector<int> INPUT_LEVEL_0 = {i};
+    std::vector<SymIndex> INPUT_LEVEL_1 = FACE[INPUT_LEVEL_0[0]];
+    double result = 0;
+    {
+      result = sqrt((((((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 1)))) + (-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 0)))))) * (((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 1)))) + (-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 0))))))) + (((((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 2)))) + (-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 1)))))) * (((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 2)))) + (-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 1))))))) + (((-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 2))))) + ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 0))))) * ((-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 2))))) + ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 0)))))))));
+    }
+    FIXED_STORAGE_ACCESS_0[i] = result;
+  }
 
-    return 0;
+  std::vector<double> FIXED_STORAGE_ACCESS_1(FACE.size());
+  for (int i = 0; i < FACE.size(); i++) {
+    std::vector<int> INPUT_LEVEL_0 = {i};
+    std::vector<SymIndex> INPUT_LEVEL_1 = FACE[INPUT_LEVEL_0[0]];
+    double result = 0;
+    {
+      result = sqrt((((((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 1)))) + (-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 0)))))) * (((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 1)))) + (-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 0))))))) + (((((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 2)))) + (-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 1)))))) * (((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 2)))) + (-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 1))))))) + (((-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 2))))) + ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 0))))) * ((-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 2))))) + ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 0)))))))));
+    }
+    FIXED_STORAGE_ACCESS_1[i] = result;
+  }
+
+  std::vector<double> FIXED_STORAGE_ACCESS_2(FACE.size());
+  for (int i = 0; i < FACE.size(); i++) {
+    std::vector<int> INPUT_LEVEL_0 = {i};
+    std::vector<SymIndex> INPUT_LEVEL_1 = FACE[INPUT_LEVEL_0[0]];
+    double result = 0;
+    {
+      result = sqrt((((((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 1)))) + (-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 0)))))) * (((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 1)))) + (-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 0))))))) + (((((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 2)))) + (-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 1)))))) * (((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 2)))) + (-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 1))))))) + (((-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 2))))) + ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 0))))) * ((-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 2))))) + ((VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[1].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_1[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_1[2].index, 0)))))))));
+    }
+    FIXED_STORAGE_ACCESS_2[i] = result;
+  }
+
+
+
+
+
+
+
+  for (int i = 0; i < V.rows(); i++) { // ARTIFICIAL
+    double result = 1.0;
+    std::vector<int> INPUT_LEVEL_0 = {i}; // ARTIFICIAL
+    std::vector<SymIndex> INPUT_LEVEL_1 = V2F[INPUT_LEVEL_0[0]];
+    {
+      for (int j = 0; j < INPUT_LEVEL_1.size(); j++) { // ARTIFICIAL
+        int pattern = INPUT_LEVEL_1[j].pattern; // ARTIFICIAL
+        std::vector<SymIndex> INPUT_LEVEL_2 = FACE[INPUT_LEVEL_1[j].index];
+        {
+          // THE ASSIGNMENT IS ARTIFICIAL, THE COMPUTATION IS NOT
+          result +=  ((-1.000000 * (-1.000000 + ((VARYING_STORAGE_ACCESS_0[INPUT_LEVEL_1[j].index][pattern] / FIXED_STORAGE_ACCESS_0[INPUT_LEVEL_1[j].index]) / 2.000000))) + (-1.000000 * (-1.000000 + ((VARYING_STORAGE_ACCESS_1[INPUT_LEVEL_1[j].index][pattern] / FIXED_STORAGE_ACCESS_1[INPUT_LEVEL_1[j].index]) / 2.000000))));
+        }
+      }
+    }
+    L3.coeffRef(i, i) = result;
+  }
+
+  for (int i = 0; i < EDGE.size(); i++) {
+    int v0 = EDGE[i][0].index;
+    int v1 = EDGE[i][1].index;
+    double result = 0.0;
+    std::vector<int> INPUT_LEVEL_0 = {i}; // ARTIFICIAL
+    std::vector<SymIndex> INPUT_LEVEL_1 = E2F[INPUT_LEVEL_0[0]];
+    for (int j = 0; j < INPUT_LEVEL_1.size(); j++) { // ARTIFICIAL
+      int pattern = INPUT_LEVEL_1[j].pattern; // ARTIFICIAL
+      std::vector<SymIndex> INPUT_LEVEL_2 = FACE[INPUT_LEVEL_1[j].index];
+      {
+        result += (-1.000000 + ((VARYING_STORAGE_ACCESS_2[INPUT_LEVEL_1[j].index][pattern] / FIXED_STORAGE_ACCESS_2[INPUT_LEVEL_1[j].index]) / 2.000000));
+      }
+    }
+    L3.coeffRef(v0, v1) = result;
+    L3.coeffRef(v1, v0) = result;
+  }
+
+  // // double diff = 0;
+  std::cout << L.norm() << std::endl;
+  std::cout << "diff: " << (L - L3).norm() << std::endl;
+
+  return 0;
 }
