@@ -240,11 +240,12 @@ int main(int argc, char* argv[])
 
   for (int i = 0; i < V.rows(); i++) { // ARTIFICIAL
     double result = 0.0;
+    std::vector<SymIndex> INPUT_LEVEL_1 = V2F[i];
     {
-      for (int j = 0; j < V2F[i].size(); j++) { // ARTIFICIAL
-        int pattern = V2F[i][j].pattern; // ARTIFICIAL
+      for (int j = 0; j < INPUT_LEVEL_1.size(); j++) { // ARTIFICIAL
+        int pattern = INPUT_LEVEL_1[j].pattern; // ARTIFICIAL
         // THE ASSIGNMENT IS ARTIFICIAL, THE COMPUTATION IS NOT
-        result +=  ((-1.000000 * (((VARYING_STORAGE_ACCESS_1[V2F[i][j].index][pattern] / FIXED_STORAGE_ACCESS_0[V2F[i][j].index])))) + -1.0 * VARYING_STORAGE_ACCESS_2[V2F[i][j].index][pattern] / FIXED_STORAGE_ACCESS_0[V2F[i][j].index]);
+        result +=  ((-1.000000 * (((VARYING_STORAGE_ACCESS_1[INPUT_LEVEL_1[j].index][pattern] / FIXED_STORAGE_ACCESS_0[INPUT_LEVEL_1[j].index])))) + -1.0 * VARYING_STORAGE_ACCESS_2[INPUT_LEVEL_1[j].index][pattern] / FIXED_STORAGE_ACCESS_0[INPUT_LEVEL_1[j].index]);
       }
     }
     L3.coeffRef(i, i) = result;
@@ -254,9 +255,10 @@ int main(int argc, char* argv[])
     int v0 = EDGE[i][0].index;
     int v1 = EDGE[i][1].index;
     double result = 0.0;
-    for (int j = 0; j < E2F[i].size(); j++) { // ARTIFICIAL
-      int pattern = E2F[i][j].pattern; // ARTIFICIAL
-      result += (((VARYING_STORAGE_ACCESS_0[E2F[i][j].index][pattern] / FIXED_STORAGE_ACCESS_0[E2F[i][j].index])));
+    std::vector<SymIndex> INPUT_LEVEL_1 = E2F[i];
+    for (int j = 0; j < INPUT_LEVEL_1.size(); j++) { // ARTIFICIAL
+      int pattern = INPUT_LEVEL_1[j].pattern; // ARTIFICIAL
+      result += (((VARYING_STORAGE_ACCESS_0[INPUT_LEVEL_1[j].index][pattern] / FIXED_STORAGE_ACCESS_0[INPUT_LEVEL_1[j].index])));
     }
     L3.coeffRef(v0, v1) = result;
     L3.coeffRef(v1, v0) = result;
@@ -280,7 +282,7 @@ int main(int argc, char* argv[])
   buildCotan(Vs, F, Ls, Ls);
   t.printTime("build cotan");
 
-  Sym::ComputeUnit<double> unit(Device(VecWidth(4), NumThreads(1)), Vs, Ls);
+  Sym::ComputeUnit<double> unit(Device(VecWidth(4), NumThreads(8)), Vs, Ls);
   t.printTime("build");
 
   unit.compile();
@@ -291,7 +293,7 @@ int main(int argc, char* argv[])
   unit.getResults(L2);
 
   std::cout << "residual: " << squaredError(L, L2) << endl;
-  // printDifferences(L, L2, 1e-8);
+  printDifferences(L, L2, 1e-8);
 
   return 0;
 }
