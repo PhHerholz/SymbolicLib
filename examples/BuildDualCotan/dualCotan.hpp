@@ -7,13 +7,13 @@ using Vector3d = Eigen::Matrix<TReal, 3, 1>;
 
 template<class RealT>
 void circumcenter(const Vector3d<RealT>& a, const Vector3d<RealT>& b, const Vector3d<RealT>& c, Vector3d<RealT>& cc) {
-    const RealT l[3]{
+    const RealT l[3] {
         (b - c).squaredNorm(),
         (a - c).squaredNorm(),
         (a - b).squaredNorm()
     };
 
-    const RealT ba[3]{ l[0] * (l[1] + l[2] - l[0]), l[1] * (l[2] + l[0] - l[1]), l[2] * (l[0] + l[1] - l[2]) };
+    const RealT ba[3] { l[0] * (l[1] + l[2] - l[0]), l[1] * (l[2] + l[0] - l[1]), l[2] * (l[0] + l[1] - l[2]) };
     const RealT sum = ba[0] + ba[1] + ba[2];
 
     cc = (ba[0] / sum) * a + (ba[1] / sum) * b + (ba[2] / sum) * c;
@@ -48,12 +48,12 @@ RealT volume(const Vector3d<RealT>& a, const Vector3d<RealT>& b, const Vector3d<
 }
 
 template<class RealT>
-void dualLaplace(const Eigen::Matrix<RealT, -1, -1>& V, const Eigen::MatrixXi& T, Eigen::SparseMatrix<RealT>& L, Eigen::SparseMatrix<RealT>& M) {
+void dualLaplace(const Eigen::Matrix < RealT, -1, -1 > & V, const Eigen::MatrixXi& T, Eigen::SparseMatrix<RealT>& L, Eigen::SparseMatrix<RealT>& M) {
     const size_t nt = T.rows();
     const size_t nv = V.rows();
 
-    const int turn[4][4]{
-        {-1, 2, 3, 1},
+    const int turn[4][4] {
+        { -1, 2, 3, 1},
         {3, -1, 0, 2},
         {1, 3, -1, 0},
         {2, 0, 1, -1}
