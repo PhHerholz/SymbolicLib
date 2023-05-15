@@ -102,10 +102,12 @@ int main(int argc, char* argv[])
 
   Eigen::MatrixXi F;
   Eigen::MatrixXd V;
+
   igl::read_triangle_mesh(meshFile, V, F);
 
   // initializaiton of our stuffs
   std::vector<std::vector<SymIndex>> FACE;
+  std::vector<std::vector<SymIndex>> VERTEX(V.rows());
   std::map<int, std::map<int, std::map<int, int>>> edge_to_face_map; // for each starting vertex, for each ending vertex, what is the triangle id and its pattern
   FACE.reserve(F.rows());
   for (int i = 0; i < F.rows(); i++) {
@@ -141,16 +143,16 @@ int main(int argc, char* argv[])
     }
   }
 
-  // initialize V2F
-  std::vector<std::vector<SymIndex>> V2F(V.rows());
+  // initialize VERTEX2FACE
+  std::vector<std::vector<SymIndex>> VERTEX2FACE(V.rows());
   for (int i = 0; i < F.rows(); i++) {
     for (int j = 0; j < 3; j++) {
-      V2F[F(i, j)].push_back({i, j});
+      VERTEX2FACE[F(i, j)].push_back({i, j});
     }
   }
-  // initialize EDGE and E2F
+  // initialize EDGE and EDGE2FACE
   std::vector<std::vector<SymIndex>> EDGE;
-  std::vector<std::vector<SymIndex>> E2F;
+  std::vector<std::vector<SymIndex>> EDGE2FACE;
   for (auto const& [v0, v1_map] : edge_to_face_map) {
     for (auto const& [v1, face_map] : v1_map) {
       EDGE.push_back({{v0, -1}, {v1, -1}});
@@ -158,7 +160,7 @@ int main(int argc, char* argv[])
       for (auto const& [face_id, access_pattern] : face_map) {
         face_and_patterns.push_back({face_id, access_pattern});
       }
-      E2F.push_back(face_and_patterns);
+      EDGE2FACE.push_back(face_and_patterns);
     }
   }
   // std::cout << "Finished initialization\n";
@@ -172,29 +174,35 @@ int main(int argc, char* argv[])
   buildCotan(V, F, L, M);
   t.printTime("buildCotan direct");
 
-  std::vector<std::vector<double>> VARYING_STORAGE_ACCESS_0 = std::vector<std::vector<double>>(FACE.size(), std::vector<double>(6));
-  std::vector<std::vector<double>> VARYING_STORAGE_ACCESS_2 = std::vector<std::vector<double>>(FACE.size(), std::vector<double>(3));
-  std::vector<std::vector<double>> VARYING_STORAGE_ACCESS_1 = std::vector<std::vector<double>>(FACE.size(), std::vector<double>(3));
-  std::vector<std::vector<int>> VARYING_INPUT_0 = {{2, 0, 2, 1, 2, 0, 2, 1, 2, 0, 2, 1}, {1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0}, {2, 0, 2, 1, 2, 0, 2, 1, 2, 0, 2, 1}, {0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2}, {1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0}, {0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2}};
-  std::vector<std::vector<int>> VARYING_INPUT_1 = {{2, 0, 2, 1, 2, 0, 2, 1, 2, 0, 2, 1}, {2, 0, 2, 1, 2, 0, 2, 1, 2, 0, 2, 1}, {1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0}};
-  std::vector<std::vector<int>> VARYING_INPUT_2 = {{1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0}, {0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2}, {0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2}};
-
-  std::vector<double> FIXED_STORAGE_ACCESS_0 = std::vector<double>(FACE.size());
 
   // technically this is also initialization
-  Eigen::SparseMatrix<double> L3;
-  L3.resize(V.rows(), V.rows());
-  L3 = L;
+  Eigen::SparseMatrix<double> OUTPUT_MATRIX;
+  std::vector<std::vector<int>> VARYING_INPUT;
+  OUTPUT_MATRIX.resize(V.rows(), V.rows());
+  OUTPUT_MATRIX = L;
+
+// here we have the output storage for this varying function0
+  std::vector<std::vector<double>> VARYING_STORAGE_ACCESS_0 = std::vector<std::vector<double>>(FACE.size(), std::vector<double>(6));
+// here we have the output storage for this varying function1
+  std::vector<std::vector<double>> VARYING_STORAGE_ACCESS_1 = std::vector<std::vector<double>>(FACE.size(), std::vector<double>(3));
+// here we have the output storage for this varying function2
+  std::vector<std::vector<double>> VARYING_STORAGE_ACCESS_2 = std::vector<std::vector<double>>(FACE.size(), std::vector<double>(3));
+// here we have the output storage for fixed function0
+  std::vector<double> FIXED_STORAGE_ACCESS_0 = std::vector<double>(FACE.size());
+  const std::vector<std::vector<int>> VARYING_INPUT_0 = {{2, 0, 2, 1, 2, 0, 2, 1, 2, 0, 2, 1}, {1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0}, {2, 0, 2, 1, 2, 0, 2, 1, 2, 0, 2, 1}, {0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2}, {1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0}, {0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2}};
+  const std::vector<std::vector<int>> VARYING_INPUT_1 = {{2, 0, 2, 1, 2, 0, 2, 1, 2, 0, 2, 1}, {2, 0, 2, 1, 2, 0, 2, 1, 2, 0, 2, 1}, {1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0}};
+  const std::vector<std::vector<int>> VARYING_INPUT_2 = {{1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0}, {0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2}, {0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2}};
+
+
   t.reset();
   // ============================================================================================================
 
 // VARYING FUNCTION 0
 // THIS IS A FUNCTION OVER FACE
-// here we have the output storage for this function
 
 // here we have the actual for loop
   for (int FOR_INDEX_0 = 0; FOR_INDEX_0 < FACE.size(); FOR_INDEX_0++) {
-    std::vector<SymIndex> INPUT_LEVEL_0 = FACE[FOR_INDEX_0];
+    const std::vector<SymIndex>& INPUT_LEVEL_0 = FACE[FOR_INDEX_0];
     for (int pattern = 0; pattern < VARYING_INPUT_0.size(); pattern++) {
       VARYING_STORAGE_ACCESS_0[FOR_INDEX_0][pattern] = (((VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_0[pattern][0]].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_0[pattern][1]].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_0[pattern][2]].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_0[pattern][3]].index, 0)))) + ((VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_0[pattern][4]].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_0[pattern][5]].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_0[pattern][6]].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_0[pattern][7]].index, 2)))) + ((VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_0[pattern][8]].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_0[pattern][9]].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_0[pattern][10]].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_0[pattern][11]].index, 1)))));
     }
@@ -202,11 +210,9 @@ int main(int argc, char* argv[])
 
 // VARYING FUNCTION 1
 // THIS IS A FUNCTION OVER FACE
-// here we have the output storage for this function
-
 // here we have the actual for loop
   for (int FOR_INDEX_0 = 0; FOR_INDEX_0 < FACE.size(); FOR_INDEX_0++) {
-    std::vector<SymIndex> INPUT_LEVEL_0 = FACE[FOR_INDEX_0];
+    const std::vector<SymIndex>& INPUT_LEVEL_0 = FACE[FOR_INDEX_0];
     for (int pattern = 0; pattern < VARYING_INPUT_1.size(); pattern++) {
       VARYING_STORAGE_ACCESS_1[FOR_INDEX_0][pattern] = (((VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_1[pattern][0]].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_1[pattern][1]].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_1[pattern][2]].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_1[pattern][3]].index, 0)))) + ((VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_1[pattern][4]].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_1[pattern][5]].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_1[pattern][6]].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_1[pattern][7]].index, 2)))) + ((VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_1[pattern][8]].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_1[pattern][9]].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_1[pattern][10]].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_1[pattern][11]].index, 1)))));
     }
@@ -214,60 +220,67 @@ int main(int argc, char* argv[])
 
 // VARYING FUNCTION 2
 // THIS IS A FUNCTION OVER FACE
-// here we have the output storage for this function
-
 // here we have the actual for loop
   for (int FOR_INDEX_0 = 0; FOR_INDEX_0 < FACE.size(); FOR_INDEX_0++) {
-    std::vector<SymIndex> INPUT_LEVEL_0 = FACE[FOR_INDEX_0];
+    const std::vector<SymIndex>& INPUT_LEVEL_0 = FACE[FOR_INDEX_0];
     for (int pattern = 0; pattern < VARYING_INPUT_2.size(); pattern++) {
       VARYING_STORAGE_ACCESS_2[FOR_INDEX_0][pattern] = (((VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_2[pattern][0]].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_2[pattern][1]].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_2[pattern][2]].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_2[pattern][3]].index, 0)))) + ((VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_2[pattern][4]].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_2[pattern][5]].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_2[pattern][6]].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_2[pattern][7]].index, 2)))) + ((VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_2[pattern][8]].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_2[pattern][9]].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_2[pattern][10]].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[VARYING_INPUT_2[pattern][11]].index, 1)))));
     }
   }
-  t.printTime("Compute Varying Functions");
+
 // FIXED FUNCTION 0
 // THIS IS A FUNCTION OVER FACE
-// here we have the output storage for this function
-
 // here we have the actual for loop
   for (int FOR_INDEX_0 = 0; FOR_INDEX_0 < FACE.size(); FOR_INDEX_0++) {
-    std::vector<SymIndex> INPUT_LEVEL_0 = FACE[FOR_INDEX_0];
+    const std::vector<SymIndex>& INPUT_LEVEL_0 = FACE[FOR_INDEX_0];
     FIXED_STORAGE_ACCESS_0[FOR_INDEX_0] = sqrt((((((VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[1].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[2].index, 1)))) + (-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[1].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[2].index, 0)))))) * (((VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[1].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[2].index, 1)))) + (-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[1].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[2].index, 0))))))) + (((((VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[1].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[2].index, 2)))) + (-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[1].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[2].index, 1)))))) * (((VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[1].index, 1))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[2].index, 2)))) + (-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[1].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 1) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[2].index, 1))))))) + (((-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[1].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[2].index, 2))))) + ((VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[1].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[2].index, 0))))) * ((-1.000000 * ((VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[1].index, 0))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[2].index, 2))))) + ((VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 2) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[1].index, 2))) * (VERTEX_POSITIONS(INPUT_LEVEL_0[0].index, 0) + (-1.000000 * VERTEX_POSITIONS(INPUT_LEVEL_0[2].index, 0)))))))));
   }
-  t.printTime("Compute Fixed Functions");
 
-  // ============================================================================================================
-
-
-  for (int i = 0; i < V.rows(); i++) { // ARTIFICIAL
+// OUTPUT FUNCTION 0
+// THIS IS A FUNCTION OVER EDGE2FACE
+// THIS FUNCTION REFERENCES FROM STORAGE EDGE
+// THIS FUNCTION REFERENCES TO STORAGE FACE
+  for (int FOR_INDEX_0 = 0; FOR_INDEX_0 < EDGE.size(); FOR_INDEX_0 ++) {
     double result = 0.0;
-    std::vector<SymIndex> INPUT_LEVEL_1 = V2F[i];
-    {
-      for (int j = 0; j < INPUT_LEVEL_1.size(); j++) { // ARTIFICIAL
-        int pattern = INPUT_LEVEL_1[j].pattern; // ARTIFICIAL
-        // THE ASSIGNMENT IS ARTIFICIAL, THE COMPUTATION IS NOT
-        result +=  ((-1.000000 * (((VARYING_STORAGE_ACCESS_1[INPUT_LEVEL_1[j].index][pattern] / FIXED_STORAGE_ACCESS_0[INPUT_LEVEL_1[j].index])))) + -1.0 * VARYING_STORAGE_ACCESS_2[INPUT_LEVEL_1[j].index][pattern] / FIXED_STORAGE_ACCESS_0[INPUT_LEVEL_1[j].index]);
-      }
+    const std::vector<SymIndex>& INPUT_LEVEL_0 = EDGE2FACE[FOR_INDEX_0];
+    double INTERMEDIATE_0 = 0.0;
+
+    for (int FOR_INDEX_1 = 0; FOR_INDEX_1 < INPUT_LEVEL_0.size(); FOR_INDEX_1++) {
+      int pattern = INPUT_LEVEL_0[FOR_INDEX_1].pattern;
+      double in1 = VARYING_STORAGE_ACCESS_0[INPUT_LEVEL_0[FOR_INDEX_1].index][pattern];
+      double in2 = FIXED_STORAGE_ACCESS_0[INPUT_LEVEL_0[FOR_INDEX_1].index];
+      INTERMEDIATE_0 += ( in1 / in2);
+
     }
-    L3.coeffRef(i, i) = result;
+    ;
+    OUTPUT_MATRIX.coeffRef(EDGE[FOR_INDEX_0][0].index, EDGE[FOR_INDEX_0][1].index) = INTERMEDIATE_0;
   }
 
-  for (int i = 0; i < EDGE.size(); i++) {
-    int v0 = EDGE[i][0].index;
-    int v1 = EDGE[i][1].index;
+// OUTPUT FUNCTION 1
+// THIS IS A FUNCTION OVER VERTEX2FACE
+// THIS FUNCTION REFERENCES FROM STORAGE VERTEX
+// THIS FUNCTION REFERENCES TO STORAGE FACE
+  for (int FOR_INDEX_0 = 0; FOR_INDEX_0 < VERTEX.size(); FOR_INDEX_0 ++) {
     double result = 0.0;
-    std::vector<SymIndex> INPUT_LEVEL_1 = E2F[i];
-    for (int j = 0; j < INPUT_LEVEL_1.size(); j++) { // ARTIFICIAL
-      int pattern = INPUT_LEVEL_1[j].pattern; // ARTIFICIAL
-      result += (((VARYING_STORAGE_ACCESS_0[INPUT_LEVEL_1[j].index][pattern] / FIXED_STORAGE_ACCESS_0[INPUT_LEVEL_1[j].index])));
+    const std::vector<SymIndex>& INPUT_LEVEL_0 = VERTEX2FACE[FOR_INDEX_0];
+    double INTERMEDIATE_0 = 0.0;
+
+    for (int FOR_INDEX_1 = 0; FOR_INDEX_1 < INPUT_LEVEL_0.size(); FOR_INDEX_1++) {
+      int pattern = INPUT_LEVEL_0[FOR_INDEX_1].pattern;
+      double in0 = VARYING_STORAGE_ACCESS_1[INPUT_LEVEL_0[FOR_INDEX_1].index][pattern];
+      double in1 = FIXED_STORAGE_ACCESS_0[INPUT_LEVEL_0[FOR_INDEX_1].index];
+      double in2 = VARYING_STORAGE_ACCESS_2[INPUT_LEVEL_0[FOR_INDEX_1].index][pattern];
+      INTERMEDIATE_0 += ((-1.000000 * (in0 / in1)) + (-1.000000 * ( in2 / in1)));
+
     }
-    L3.coeffRef(v0, v1) = result;
-    L3.coeffRef(v1, v0) = result;
+    ;
+    OUTPUT_MATRIX.coeffRef(FOR_INDEX_0, FOR_INDEX_0) = INTERMEDIATE_0;
   }
   t.printTime("Output");
-
+  // ============================================================================================================
   // // double diff = 0;
   std::cout << L.norm() << std::endl;
-  std::cout << "diff: " << (L - L3).norm() << std::endl;
+  std::cout << "diff: " << (L - OUTPUT_MATRIX).norm() << std::endl;
 
 
   M2 = M;
@@ -282,13 +295,14 @@ int main(int argc, char* argv[])
   buildCotan(Vs, F, Ls, Ls);
   t.printTime("build cotan");
 
-  Sym::ComputeUnit<double> unit(Device(VecWidth(4), NumThreads(1)), Vs, Ls);
+  Sym::ComputeUnit<double> unit(Device(VecWidth(4), NumThreads(2)), Vs, Ls);
   t.printTime("build");
 
   unit.compile();
   t.printTime("compile");
-
-  unit.execute(V);
+  for (int i = 0; i < 100; i++) {
+    unit.execute(V);
+  }
   t.printTime("execute");
   unit.getResults(L2);
 
