@@ -282,7 +282,7 @@ int main(int argc, char* argv[])
   buildCotan(Vs, F, Ls, Ls);
   t.printTime("build cotan");
 
-  Sym::ComputeUnit<double> unit(Device(VecWidth(4), NumThreads(8)), Vs, Ls);
+  Sym::ComputeUnit<double> unit(Device(VecWidth(4), NumThreads(1)), Vs, Ls);
   t.printTime("build");
 
   unit.compile();
